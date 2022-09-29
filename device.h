@@ -1,17 +1,4 @@
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <time.h>
-#include "vector.h"
-
-struct Server{
-    vector users;
-
+struct Device{
 //function pointers
     void (*pfSignup)(void);
     //void signup(void);
@@ -36,4 +23,4 @@ struct Server{
     //void invia_chi_ha_fatto_show();
 };
 
-struct Server s;
+struct Device d;

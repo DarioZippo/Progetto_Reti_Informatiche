@@ -18,8 +18,7 @@ typedef struct sVectorList
 
 //structure contain the function pointer
 typedef struct sVector vector;
-struct sVector
-{
+struct sVector{
     sVectorList vectorList;
 //function pointers
     int (*pfVectorTotal)(vector *);
@@ -30,3 +29,5 @@ struct sVector
     int (*pfVectorDelete)(vector *, int);
     int (*pfVectorFree)(vector *);
 };
+
+extern void vector_init(vector *v);
