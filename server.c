@@ -26,6 +26,125 @@ void signup(){
     fclose(file_user);
 }
 
+// funzione per l'accesso di un utente già registrato
+void in(){
+    char username[1024], password[1024], user_psw[2048];
+    FILE* file_user;
+    bool found;
+
+    printf("IN\n");
+    readCredentials(username, password);
+    
+    strcpy(user_psw, username);
+    strcat(user_psw, " ");
+    strcat(user_psw, password);
+    // trova utente restituisce true se trova il client con quelle credenziali nel file 0 altrimenti
+    found = searchUser(user_psw);
+    // non l'ha trovato, non inserisco il login
+    if(found == false){
+        printf("Non sei ancora registrato\n");
+        return;
+    }
+    else if(found == true){
+        insertLoggedUser(username);
+    }
+}
+
+void insertLoggedUser(char* username){
+    int len = strlen(username);
+    char record[1500];
+    time_t rawtime;
+
+    // cerco utente nella lista degli utenti hanno fatto una connessione
+    bool found = false;
+    int i;
+    
+    struct Record* temp;
+    for (i = 0; i < userRegister.pfVectorTotal(&userRegister); i++)
+    {
+        temp = (struct Record*)userRegister.pfVectorGet(&userRegister, i);
+        if(strcmp(temp->username, username) == 0){
+            found = true;
+            break;
+        }
+    }
+    
+    // se non c'è creo nuovo elemento della lista
+    if(found == false){
+        userRegister.pfVectorAdd(&userRegister, malloc(sizeof(struct Record)));
+        printf("%d\n", userRegister.pfVectorTotal(&userRegister));
+        temp = (struct Record*)userRegister.pfVectorGet(&userRegister, userRegister.pfVectorTotal(&userRegister) - 1);
+    }
+    printf("Temp individuato\n");
+    // aggiorno entry del server
+    time(&rawtime);
+
+    strcpy(temp->username, username);
+    temp->porta = 4242;//porta;
+    temp->login = rawtime; // login a timestamp corrente
+    temp->logout = (time_t) NULL; // logout NULL perchè è online
+    temp->socket = i; // socket viene salvato per la disconnessione improvvisa
+    writeLoginOnFile(username, record, len, 4242/*porta*/, rawtime);
+}
+
+// scrivo login su file di log
+void writeLoginOnFile(char* username, char* record, int len, int porta, time_t rawtime){
+    printf("Scrittura su file\n");
+    FILE* file_login = fopen("./login.txt", "a");
+    if(file_login == NULL){
+        printf("Errore nell'apertura del file\n");
+        return;
+    }
+    
+    time(&rawtime);
+    fprintf(file_login, "%s %d %s %s\n", username, porta, ctime(&rawtime), "NULL");
+    fclose(file_login);
+}
+
+// trova utente, utilizzata in fase di login per cercare utente registrato nel file user.txt
+bool searchUser(char* user_psw){
+    char current_credentials[2049];
+    FILE* file_user;
+    char* res;
+    bool found = false;
+
+    file_user = fopen("./user.txt", "r");
+    if(file_user == NULL){
+        printf("Errore nell'apertura del file\n");
+        return;
+    }
+
+    while(1){
+        // legge righe del file finchè non termina
+        res = fgets(current_credentials, 2049, file_user);
+        if(res == NULL )
+            break;
+        printf("res: %s", res);
+        // se lo trova, invia al client "LOGIN" e il client capisce che il login è avvenuto con successo
+        if(strstr(current_credentials, user_psw) != NULL){ 
+            found = true;
+            /*ret = send(i, "LOGIN\0", 6, 0);
+            if(ret < 0){
+                printf("Errore nell'invio\n");
+                return 0;
+            }*/
+            break;
+        }
+    }
+    printf("Dopo la lettura\n");
+    // se non l'ha trovato, invia "NO" e il client rileva che il login ha fallito
+    if(found == false){
+        /*ret = send(i, "NO\0", 6, 0);
+        if(ret < 0){
+            printf("Errore nell'invio\n");
+            return 0;
+        }*/
+    }
+    fclose(file_user);
+    printf("Fine ricerca: %d\n", found);
+    return found;
+}
+
 // riceve credenziali, username e password
 void readCredentials(char* username, char* password){
     // riceve lunghezza username
@@ -85,11 +204,11 @@ void client_disconnection(int sock){
     int i;
     /*
     User* temp;
-    for (i = 0; i < s.users.pfVectorTotal(&s.users); i++)
+    for (i = 0; i < s.userRegister.pfVectorTotal(&s.userRegister); i++)
     {
-        if(s.users.pfVectorGet(&s, i) == sock){
+        if(s.userRegister.pfVectorGet(&s, i) == sock){
             found = true;
-            temp = s.users.pfVectorGet(&s, i);
+            temp = s.userRegister.pfVectorGet(&s, i);
             break;
         }
     }
@@ -110,7 +229,9 @@ void execCommand(int command){
     case 1:
         signup();
         break;
-    
+    case 2:
+        in();
+        break;
     default:
         break;
     }
@@ -122,12 +243,13 @@ void server_init(struct Server *s){
     //init function pointers
     s->pfSignup = signup;
     //initialize the capacity and allocate the memory
-    vector_init(&(s->users));
+    vector_init(&(s->userRegister));
     printf("Server inizzializzato\n");
 }
 */
 
 int main(){
+    vector_init(&userRegister);
     int ret, newfd, addrlen, len, k;
     
     /* Creazione socket */

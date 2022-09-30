@@ -28,6 +28,22 @@ int fdmax;
 struct sockaddr_in my_addr, cl_addr;
 char buffer[BUFFER_SIZE];
 
+struct Record{
+    char username[1024];
+    int porta;
+    time_t login;
+    time_t logout;
+    // variabili extra rispetto al record registro delle specifiche
+    int socket;
+};
+
+vector userRegister;
+
 void signup();
-//void read_credentials(char* username, char* password);
+void in();
+void insertLoggedUser(char* username);
+void writeLoginOnFile(char* username, char* record, int len, int porta, time_t rawtime);
+bool searchUser(char* user_psw);
+void read_credentials(char* username, char* password);
 void client_disconnection(int sock);
+void execCommand(int command);
