@@ -9,31 +9,25 @@
 #include <time.h>
 #include "vector.h"
 
-struct Server{
-    vector users;
+//PARTE DA MODIFICARE PERCHE' LE GRANDEZZE TE LE DEVE
+//MANDARE IL CLIENT
+#define BUFFER_SIZE 1024
+#define REQUEST_LEN 4 // REQ\0
 
-//function pointers
-    void (*pfSignup)(void);
-    //void signup(void);
-    void (*pfIn)(void);
-    //void in(void);
-    //void prendi_credenziali(char*,char*);
-    //int trova_utente(char*);
-    //void inserisci_login(char*, int);
-    //void inizializza_da_file_login(void);
-    //void chat(void);
-    //void out(void);
-    //void scrivi_login_su_file(char*,char*,int,int,time_t);
-    //void messaggio_pendente(void);
-    //void hanging(void);
-    //void show();
-    //void comandi();
-    //void help();
-    //void list();
-    //void esc();
-    //void invia_utenti_online();
-    //void disconnessione_client(int);
-    //void invia_chi_ha_fatto_show();
-};
+typedef int bool;
+#define true 1
+#define false 0
 
-struct Server s;
+int listener, ret, addrlen, command, len, sd, i;
+uint16_t lmsg, s_command;
+    
+fd_set master; 
+fd_set read_fds; 
+int fdmax; 
+
+struct sockaddr_in my_addr, cl_addr;
+char buffer[BUFFER_SIZE];
+
+void signup();
+//void read_credentials(char* username, char* password);
+void client_disconnection(int sock);

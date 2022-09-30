@@ -8,29 +8,6 @@
 #include <unistd.h>
 #include "device.h"
 
-#define BUFFER_SIZE 1024
-#define RESPONSE_LEN 9 // HH:MM:SS\0
-
-typedef int bool;
-#define true 1
-#define false 0
-
-int sd, ret, port, len, new_sd;
-uint16_t lmsg;
-struct sockaddr_in server_addr, my_addr, peer_addr;
-char* username;
-int username_len;
-bool logged;
-fd_set master; 
-fd_set read_fds;
-int fdmax, i, listener_sock;
-
-void readCredentials(char* credentials){
-    printf("Inserire credenziali separate da uno spazio\n");
-    fgets(credentials, BUFFER_SIZE, stdin);
-    return credentials;
-}
-
 void sendCredentials(char* credentials, int command){
     char current_username[BUFFER_SIZE], password[BUFFER_SIZE], cmd[7];
     int current_username_len, password_len, i, divider = -1;
@@ -38,21 +15,29 @@ void sendCredentials(char* credentials, int command){
     // cerco gli spazi che indicano la separazione tra comando-username-password
     for(i = 0; i < strlen(credentials); i++){
         if(credentials[i] == ' '){
-            if(divider == -1)
-                divider = i;
+            divider = i;
         }
     }
 
     // attraverso le posizioni degli spazi copio in delle variabili username e password
-    current_username_len = divider - 1;
-    password_len = strlen(credentials) - divider - 1;
+    current_username_len = divider;
+    //printf("Strlen = %d", strlen(credentials));
+    password_len = (strlen(credentials) - divider) -2;
     // copio l'username in una variabile globale, servirà nella OUT
-    strncpy(username, current_username, username_len);
-    //strncpy(password, current_password, password_len);
+    strncpy(current_username, credentials, current_username_len);
+    strncpy(password, &(credentials[divider+1]), password_len);
     username_len = current_username_len;
     current_username[current_username_len] = '\0';
     // invio il comando al server, poi username e passowrd (prima mando la lunghezza del messaggio)
-    //len = strlen(comando); 
+    // MANDO UN INTERO COME COMANDO
+    uint16_t s_command = htons(command);
+    int ret = send(sd, (void*) &s_command, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di invio comando: \n");
+        exit(1);
+    }
+    // COMMENTATA LA SOLUZIONE STRINGA
+    /*
     switch (command)
     {
     case 1:
@@ -66,9 +51,10 @@ void sendCredentials(char* credentials, int command){
     default:
         break;
     }
+
     int ret = send(sd, (void*) &lmsg, sizeof(uint16_t), 0);
     if(ret < 0){
-        perror("Errore in fase di invio comando: \n");
+        perror("Errore in fase di LEN comando: \n");
         exit(1);
     }
     switch (command)
@@ -82,13 +68,13 @@ void sendCredentials(char* credentials, int command){
     default:
         break;
     }
-        
+    
     ret = send(sd, cmd, len, 0);
     if(ret < 0){
-        perror("Errore in fase di invio comando: \n");
+        perror("Errore in fase di invio STRINGA comando: \n");
         exit(1);
     }
-
+    */
     // invio lunghezza dell'username e poi l'username
     lmsg = htons(current_username_len);
     ret = send(sd, (void*) &lmsg, sizeof(uint16_t), 0);
@@ -114,6 +100,12 @@ void sendCredentials(char* credentials, int command){
         perror("Errore in fase di invio comando: \n");
         exit(1);
     }
+}
+
+void readCredentials(char* credentials){
+    printf("Inserire credenziali separate da uno spazio\n");
+    fgets(credentials, BUFFER_SIZE, stdin);
+    return credentials;
 }
 
 void signup(){
@@ -172,24 +164,19 @@ void device_init(struct Device *d){
 }
 */
 int main(int argc, char* argv[]){
-    //device_init(&d);
-
-    int ret, sd, len;
-    bool logged;
-    struct sockaddr_in srv_addr;
     char buffer[BUFFER_SIZE];
 
     /* Creazione socket */
     sd = socket(AF_INET,SOCK_STREAM,0);
 
     /* Creazione indirizzo del server */
-    memset(&srv_addr, 0, sizeof(srv_addr)); 
-    srv_addr.sin_family = AF_INET;
-    srv_addr.sin_port = htons(4242);
-    inet_pton(AF_INET, "127.0.0.1", &srv_addr.sin_addr);
+    memset(&server_addr, 0, sizeof(server_addr)); 
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(4242);
+    inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr);
 
     /* connessione */
-    ret = connect(sd, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
+    ret = connect(sd, (struct sockaddr*)&server_addr, sizeof(server_addr));
     if(ret < 0){
        perror("Errore in fase di connessione: \n");
        exit(1);

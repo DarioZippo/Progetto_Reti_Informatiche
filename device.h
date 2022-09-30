@@ -1,26 +1,32 @@
-struct Device{
-//function pointers
-    void (*pfSignup)(void);
-    //void signup(void);
-    void (*pfIn)(void);
-    //void in(void);
-    //void prendi_credenziali(char*,char*);
-    //int trova_utente(char*);
-    //void inserisci_login(char*, int);
-    //void inizializza_da_file_login(void);
-    //void chat(void);
-    //void out(void);
-    //void scrivi_login_su_file(char*,char*,int,int,time_t);
-    //void messaggio_pendente(void);
-    //void hanging(void);
-    //void show();
-    //void comandi();
-    //void help();
-    //void list();
-    //void esc();
-    //void invia_utenti_online();
-    //void disconnessione_client(int);
-    //void invia_chi_ha_fatto_show();
-};
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-struct Device d;
+#define BUFFER_SIZE 1024
+#define RESPONSE_LEN 9 // HH:MM:SS\0
+
+typedef int bool;
+#define true 1
+#define false 0
+
+int sd, ret, port, len, new_sd;
+uint16_t lmsg;
+struct sockaddr_in server_addr, my_addr, peer_addr;
+char* username;
+int username_len;
+bool logged = false;
+fd_set master; 
+fd_set read_fds;
+int fdmax, i, listener_sock;
+
+void readCredentials(char* credentials);
+void sendCredentials(char* credentials, int command);
+void signup();
+void in();
+int accessMenu();
+void deviceAccess();
