@@ -162,7 +162,7 @@ void readCredentials(char* username, char* password){
         return;
     }
     if(ret == 0){
-        client_disconnection(i);
+        clientDisconnection(i);
         return;
     }
     username[len] = '\0';
@@ -173,7 +173,7 @@ void readCredentials(char* username, char* password){
         return;
     }
     if(ret == 0){
-        client_disconnection(i);
+        clientDisconnection(i);
         return;
     }
     len = ntohs(lmsg);
@@ -185,7 +185,7 @@ void readCredentials(char* username, char* password){
         return;
     }
     if(ret == 0){
-        client_disconnection(i);
+        clientDisconnection(i);
         return;
     }
     password[len] = '\0';
@@ -196,19 +196,19 @@ void readCredentials(char* username, char* password){
 // funzione che chiude il socket di un client che si è disconnesso improvvisamente
 // imposta anche il timestamp di logout uguale al timestamp corrente
 // la funzione viene chiamata quando una recv restituisce 0
-void client_disconnection(int sock){
+void clientDisconnection(int sock){
     time_t rawtime;
     
     // cerco nella lista degli utenti il client con quel socket
     bool found = false;
     int i;
-    /*
-    User* temp;
-    for (i = 0; i < s.userRegister.pfVectorTotal(&s.userRegister); i++)
+    
+    struct Record* temp;
+    for (i = 0; i < userRegister.pfVectorTotal(&userRegister); i++)
     {
-        if(s.userRegister.pfVectorGet(&s, i) == sock){
+        temp = (struct Record*)userRegister.pfVectorGet(&userRegister, i);
+        if(temp->socket == sock){
             found = true;
-            temp = s.userRegister.pfVectorGet(&s, i);
             break;
         }
     }
@@ -216,11 +216,11 @@ void client_disconnection(int sock){
         return;
 
     temp->logout = time(&rawtime); // imposto timestamp logout
-    */
+    
     perror("Discussione client \n");
     close(sock); // chiudo socket
-    //FD_CLR(sock, &master);
-    //printf("CLIENT DISCONNESSO %s %s", temp->username, ctime(&temp->logout));
+    FD_CLR(sock, &master);
+    printf("CLIENT DISCONNESSO %s %s", temp->username, ctime(&temp->logout));
 }
 
 void execCommand(int command){
