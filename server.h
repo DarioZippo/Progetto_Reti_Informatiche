@@ -18,7 +18,7 @@ typedef int bool;
 #define true 1
 #define false 0
 
-int listener, ret, addrlen, command, len, sd, i;
+int listener, ret, addrlen, command, len, sd, i, port;
 uint16_t lmsg, s_command;
     
 fd_set master; 
@@ -44,6 +44,6 @@ void in();
 void insertLoggedUser(char* username);
 void writeLoginOnFile(char* username, char* record, int len, int porta, time_t rawtime);
 bool searchUser(char* user_psw);
-void read_credentials(char* username, char* password);
-void client_disconnection(int sock);
+void readCredentials(char* username, char* password);
+void clientDisconnection(int sock);
 void execCommand(int command);

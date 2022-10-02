@@ -21,7 +21,7 @@ void signup(){
         return;
     }
     printf("to inserto into file: %s %s\n", username, password);
-    fprintf(file_user, "%s %s", username, password);
+    fprintf(file_user, "%s %s\n", username, password);
     
     fclose(file_user);
 }
@@ -103,9 +103,9 @@ void writeLoginOnFile(char* username, char* record, int len, int porta, time_t r
 
 // trova utente, utilizzata in fase di login per cercare utente registrato nel file user.txt
 bool searchUser(char* user_psw){
-    char current_credentials[2049];
     FILE* file_user;
-    char* res;
+    char* line, current_credentials;
+    int read;
     bool found = false;
 
     file_user = fopen("./user.txt", "r");
@@ -114,20 +114,20 @@ bool searchUser(char* user_psw){
         return;
     }
 
-    while(1){
-        // legge righe del file finchè non termina
-        res = fgets(current_credentials, 2049, file_user);
-        if(res == NULL )
-            break;
-        printf("res: %s", res);
-        // se lo trova, invia al client "LOGIN" e il client capisce che il login è avvenuto con successo
-        if(strstr(current_credentials, user_psw) != NULL){ 
+    while ((read = getline(&line, &len, file_user)) != -1) {
+        printf("Retrieved line of length %zu:\n", read);
+        line[read - 1] = '\0';
+        printf("%s\n", line);
+
+        if(strcmp(line, user_psw) == 0){ 
             found = true;
-            /*ret = send(i, "LOGIN\0", 6, 0);
+            /*
+            ret = send(i, "LOGIN\0", 6, 0);
             if(ret < 0){
                 printf("Errore nell'invio\n");
                 return 0;
-            }*/
+            }
+            */
             break;
         }
     }
@@ -248,12 +248,100 @@ void server_init(struct Server *s){
 }
 */
 
-int main(){
+int serverMenu(){
+    printf("***************************** SERVER STARTED *********************************\n"
+        "Digita un comando:\n"
+        "\n"
+        "1) help --> mostra i dettagli dei comandi\n"
+        "2) list --> mostra un elenco degli utenti connessi\n"
+        "3) esc --> chiude il);\n"
+    );
+    int choice;
+    int min = 1, max = 3;
+    do{
+        scanf("%d", &choice);
+        //getchar(); //Risolve un bug tra scanf e fgets eseguiti in successione
+    }while(choice < min || choice > max);
+    return choice;
+}
+
+void showRegister(){
+    struct Record* temp;
+    printf("Utenti connessi: ");
+    for (int i = 0; i < userRegister.pfVectorTotal(&userRegister); i++){
+        if(i != 0)
+            printf("->");
+        temp = (struct Record*)userRegister.pfVectorGet(&userRegister, i);
+        printf(" %s ", temp->username);
+    }
+    printf("\n");
+}
+
+void restoreLogin(){
+    FILE* file_user;
+    char* line, *current_username;
+    int read, i = 0;
+    bool found = false;
+
+    file_user = fopen("./user.txt", "r");
+    if(file_user == NULL){
+        printf("Errore nell'apertura del file\n");
+        return;
+    }
+
+    while ((read = getline(&line, &len, file_user)) != -1) {
+        printf("Retrieved line of length %zu:\n", read);
+        line[read - 1] = '\0';
+        printf("%s\n", line);
+        
+        while(1){
+            if(line[i] == ' '){
+                break;
+            }
+            i++;
+        }
+        current_username = (char *) malloc(i + 1);
+        strncpy(current_username, line, i);
+        current_username[i] = '\0';
+        insertLoggedUser(current_username);
+        i = 0;
+    }
+    // se non l'ha trovato, invia "NO" e il client rileva che il login ha fallito
+    if(found == false){
+        /*ret = send(i, "NO\0", 6, 0);
+        if(ret < 0){
+            printf("Errore nell'invio\n");
+            return 0;
+        }*/
+    }
+    fclose(file_user);
+    printf("Fine ripristino:\n");
+    showRegister();
+}
+
+void restore(){
+    restoreLogin();
+}
+
+int main(int argc, char** argv){
+    // porta di ascolto viene passata come argomento, se non passata si utilizza la 4242
+    if(argv[1] != NULL)
+        port = strtol(argv[1], NULL, 10);
+    else
+        port = 4242;
+
     vector_init(&userRegister);
+
+    restore();
+
     int ret, newfd, addrlen, len, k;
     
     /* Creazione socket */
     sd = socket(AF_INET, SOCK_STREAM, 0);
+    if(sd == -1){
+        printf("Errore nella creazione del socket\n");
+        exit(1);
+    }
 
     /* Creazione indirizzo di bind */
     memset(&my_addr, 0, sizeof(my_addr)); 
@@ -262,8 +350,7 @@ int main(){
     my_addr.sin_addr.s_addr = INADDR_ANY;
     
     ret = bind(sd, (struct sockaddr*)&my_addr, sizeof(my_addr) );
-    
-    if( ret < 0 ){
+    if(ret < 0){
         perror("Bind non riuscita\n");
         exit(0);
     }
@@ -356,6 +443,7 @@ int main(){
                     command = ntohs(s_command);
                     printf("comando client rilevata: %d\n", command);
                     execCommand(command);
+                    showRegister();
                 }
                 
             }

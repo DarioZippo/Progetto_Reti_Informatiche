@@ -163,11 +163,31 @@ void device_init(struct Device *d){
     printf("Device inizzializzato\n");
 }
 */
-int main(int argc, char* argv[]){
+int main(int argc, char** argv){ 
+    uint16_t port_16_bit;
+
+    // se il server è in ascolto su una porta diversa da 4242 deve essere passata come secondo argomento
+    if(argc > 2)
+        port = strtol(argv[2], NULL, 10); // conversione da stringa a intero
+    else
+        port = 4242;
+    // la porta su cui si connette il client deve essere passata come primo argomento
+    // deve essere passata obbligatoriamente altrimenti genererà errore
+    if(argc > 1)
+        port = strtol(argv[1], NULL, 10); // conversione da stringa a intero
+    else{
+        printf("Devi inserire il numero di porta\n");
+        //return -1;
+    }
+
     char buffer[BUFFER_SIZE];
 
     /* Creazione socket */
     sd = socket(AF_INET,SOCK_STREAM,0);
+    if(sd == -1){
+        printf("Errore nella creazione del socket\n");
+        exit(1);
+    }    
 
     /* Creazione indirizzo del server */
     memset(&server_addr, 0, sizeof(server_addr)); 
