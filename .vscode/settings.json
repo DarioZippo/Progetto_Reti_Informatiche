@@ -1,6 +1,14 @@
 {
     "files.associations": {
         "types.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "inet.h": "c",
+        "in.h": "c",
+        "servercommands.h": "c",
+        "constants.h": "c",
+        "socket.h": "c",
+        "vector.h": "c",
+        "devicecommands.h": "c",
+        "stdio.h": "c"
     }
 }

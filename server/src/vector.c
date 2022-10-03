@@ -1,4 +1,4 @@
-#include "vector.h"
+#include "./../include/vector.h"
 
 int vectorTotal(vector *v)
 {
