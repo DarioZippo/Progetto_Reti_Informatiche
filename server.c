@@ -40,8 +40,8 @@ int main(int argc, char** argv){
     int ret, newfd, addrlen, len, k, choice;
 
     //restore();
-    showMenu();
-    choice = inputMenu();
+    showServerMenu();
+    choice = inputServerMenu();
     execServerCommand(choice);
 
     /* Creazione socket */
@@ -125,7 +125,6 @@ int main(int argc, char** argv){
                 else if(i == 0){
                     choice = read(0, (void*)&s_command, 1);
                     execServerCommand((int) choice);
-                    
                 }
                 // se non è il listener, 'i'' è un descrittore di socket 
                 // connesso che ha fatto la richiesta di orario, e va servito

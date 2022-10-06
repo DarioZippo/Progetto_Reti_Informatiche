@@ -14,19 +14,46 @@
 #include "./../include/record.h"
 #include "./../include/util.h"
 #include "./../include/vector.h"
+#include "./../../globals.h"
 
 void execDeviceCommand(int command){
     switch (command)
     {
     case 1:
-        signup();
+        hanging();
         break;
     case 2:
-        in();
+        show();
+        break;
+    case 3:
+        chat();
         break;
     default:
         break;
     }
+}
+
+void showDeviceMenu(){
+    printf("***************************** SERVER STARTED *********************************\n"
+        "Digita un comando:\n"
+        "\n"
+        "1: hanging\n"
+        "2: show\n"
+        "3: chat\n"
+        "4: share\n"
+        "5: out\n"
+    );
+}
+
+int inputDeviceMenu(){
+    int choice;
+    int min = 1, max = 5;
+    do{
+        scanf("%d", &choice);
+        //getchar(); //Risolve un bug tra scanf e fgets eseguiti in successione
+    }while(choice < min || choice > max);
+    printf("Input dato\n");
+    return choice;
 }
 
 // funzione per registrare nuovo utente
@@ -66,5 +93,59 @@ void in(){
     }
     else if(found == true){
         insertLoggedUser(username);
+    }
+}
+
+void hanging(){
+
+}
+
+// funzione per implementare chat
+// riceve lunghezza username_destinatario
+// riceve username_destinatario
+// se è online invia la porta a cui si è connesso username_destinatario
+// se è offline invia 0
+void chat(){
+    char username[1024];
+    int p = 0; // porta rimane a 0 se non trovo l'username nella lista
+    uint16_t pp;
+
+    printf("CHAT\n");
+    ret = recv(i, (void*)&lmsg, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di ricezione: \n");
+        return;
+    }
+    if(ret == 0){
+        disconnessione_client(i);
+        return;
+    }
+    len = ntohs(lmsg);
+    ret = recv(i, (void*)username, len, 0);
+    if(ret < 0){
+        perror("Errore in fase di ricezione: \n");
+        return;
+    }
+    if(ret == 0){
+        disconnessione_client(i);
+        return;
+    }
+    username[len] = '\0';
+
+    struct Record* temp;
+    for(int i = 0; i < userRegister.pfVectorTotal(&userRegister); i++){
+        temp = (struct Record*)userRegister.pfVectorGet(&userRegister, i);
+        if(strcmp(temp->username, username) == 0){
+            if(temp->logout == (time_t) NULL) // timestamp_logout == NULL significa che è online
+                p = temp->porta;
+            break;
+        }
+    }
+
+    pp = htons(p);
+    ret = send(i, (void*) &pp, sizeof(uint16_t), 0);
+    if(ret < 0){
+        printf("Errore in fase di invio\n");
+        return;
     }
 }

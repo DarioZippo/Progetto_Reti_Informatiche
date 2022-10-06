@@ -39,7 +39,7 @@ void esc(){
     printf("Da grande voglio fare l'USCIERE!\n");
 }
 
-void showMenu(){
+void showServerMenu(){
     printf("***************************** SERVER STARTED *********************************\n"
         "Digita un comando:\n"
         "\n"
@@ -67,7 +67,7 @@ void execServerCommand(int choice){
     }
 }
 
-int inputMenu(){
+int inputServerMenu(){
     int choice;
     int min = 1, max = 3;
     do{
