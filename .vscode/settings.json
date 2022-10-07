@@ -9,6 +9,8 @@
         "socket.h": "c",
         "vector.h": "c",
         "devicecommands.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "globals.h": "c",
+        "dev": "c"
     }
 }

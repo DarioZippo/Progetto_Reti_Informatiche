@@ -15,10 +15,9 @@ typedef int bool;
 #define false 0
 
 int sd, ret, port, len, new_sd;
-char command[1024], buffer[1024];
+char buffer[1024], username[1024];
 uint16_t lmsg;
 struct sockaddr_in server_addr, my_addr, peer_addr;
-char* username;
 int username_len;
 bool logged = false;
 fd_set master; 

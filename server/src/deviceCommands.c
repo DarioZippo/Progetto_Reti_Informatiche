@@ -20,12 +20,18 @@ void execDeviceCommand(int command){
     switch (command)
     {
     case 1:
-        hanging();
+        signup();
         break;
     case 2:
-        show();
+        in();
         break;
     case 3:
+        //hanging();
+        break;
+    case 4:
+        //show();
+        break;
+    case 5:
         chat();
         break;
     default:
@@ -117,7 +123,7 @@ void chat(){
         return;
     }
     if(ret == 0){
-        disconnessione_client(i);
+        clientDisconnection(i);
         return;
     }
     len = ntohs(lmsg);
@@ -127,7 +133,7 @@ void chat(){
         return;
     }
     if(ret == 0){
-        disconnessione_client(i);
+        clientDisconnection(i);
         return;
     }
     username[len] = '\0';

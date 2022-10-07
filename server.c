@@ -16,7 +16,7 @@
 
 #include "globals.h"
 
-int listener, ret, addrlen, len, sd, i, port;
+int listener, ret, addrlen, len, sd, i, port, command;
 uint16_t lmsg, s_command;
     
 fd_set master; 
@@ -41,8 +41,6 @@ int main(int argc, char** argv){
 
     //restore();
     showServerMenu();
-    choice = inputServerMenu();
-    execServerCommand(choice);
 
     /* Creazione socket */
     sd = socket(AF_INET, SOCK_STREAM, 0);
@@ -157,8 +155,7 @@ int main(int argc, char** argv){
                     printf("comando client rilevata: %d\n", command);
                     execDeviceCommand(command);
                     showRegister();
-                }
-                
+                } 
             }
         
         }

@@ -1,5 +1,1 @@
-dario zippo
-pappa ciccia
-aurora cane
-dario zippo
-pasta frolla
+user_1 aurora
