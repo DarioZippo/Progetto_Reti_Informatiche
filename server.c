@@ -129,9 +129,7 @@ int main(int argc, char** argv){
                 // ***senza poi chiudere il socket*** perché l'orario
                 // potrebbe essere chiesto nuovamente al server
                 else {
-                    // ricevo la lunghezza del messaggio
                     ret = recv(i, (void*)&s_command, sizeof(uint16_t), 0);
-
                     if(ret == 0){
                         printf("CHIUSURA client rilevata!\n");
                         //      disconnessione_client(i);

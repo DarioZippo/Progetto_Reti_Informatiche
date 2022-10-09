@@ -14,7 +14,7 @@ typedef int bool;
 #define true 1
 #define false 0
 
-int sd, ret, port, len, new_sd;
+int sd, ret, port, len, new_sd, server_port;
 char buffer[1024], username[1024];
 uint16_t lmsg;
 struct sockaddr_in server_addr, my_addr, peer_addr;

@@ -136,14 +136,20 @@ void chat(){
         clientDisconnection(i);
         return;
     }
-    username[len] = '\0';
+    username[len - 1] = '\0';
+
+    //printf("%s con len: %d, %d\n", username, strlen(username), len);
 
     struct Record* temp;
     for(int i = 0; i < userRegister.pfVectorTotal(&userRegister); i++){
         temp = (struct Record*)userRegister.pfVectorGet(&userRegister, i);
+        //printf("Temp: %s con len: %d\n", temp->username, strlen(temp->username));
         if(strcmp(temp->username, username) == 0){
-            if(temp->logout == (time_t) NULL) // timestamp_logout == NULL significa che è online
-                p = temp->porta;
+            printf("Trovato nella lista\n");
+            if(temp->logout == (time_t) NULL){ // timestamp_logout == NULL significa che è online
+                printf("E' ONLINE!!!!\n");
+                p = temp->port;
+            }
             break;
         }
     }

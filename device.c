@@ -195,7 +195,11 @@ void chat(){
     printf("Apertura chat con il primo messaggio\n"
         "Inserire lo username del destinatario:\n");
     char dest[1024];
+    int dest_len, p, send_port;
+    uint16_t pp;
     fgets(dest, 1024, stdin);
+
+    dest_len = strlen(dest);
 
     bool found = searchContact(dest);
     if(found == false){
@@ -208,7 +212,9 @@ void chat(){
     fgets(message, 1024, stdin);
     int len_message = strlen(message);
 
-    // invio il comando al server, poi il messaggio (prima mando la lunghezza del messaggio)
+    // 1)invio il comando al server
+    // 2)invio username destinatario
+    // 3)invio messaggio
     // MANDO UN INTERO COME COMANDO
     uint16_t s_command = htons(5);
     int ret = send(sd, (void*) &s_command, sizeof(uint16_t), 0);
@@ -217,17 +223,42 @@ void chat(){
         exit(1);
     }
 
-    // invio lunghezza del messaggio e poi il messaggio
-    lmsg = htons(len_message);
+    lmsg = htons(dest_len);
     ret = send(sd, (void*) &lmsg, sizeof(uint16_t), 0);
     if(ret < 0){
         perror("Errore in fase di invio comando: \n");
         exit(1);
     }
-    ret = send(sd, message, message, 0);
+    ret = send(sd, dest, dest_len, 0);
     if(ret < 0){
         perror("Errore in fase di invio comando: \n");
         exit(1);
+    }
+
+    // Il server mi risponde con la porta su cui si è connesso il client con cui voglio chattare
+    // la porta vale 0 nel caso in cui quel client sia offline
+    ret = recv(sd, (void*)&pp, sizeof(uint16_t), 0);
+    if(ret < 0){
+        printf("Errore nella ricezione\n");
+        return;
+    }
+    // Gestione disconnessione server
+    if(ret == 0){
+        printf("DISCONNESSIONE SERVER\n");
+        exit(1);
+    }
+
+    // se il destinatario è ONLINE ricevo la sua porta, qualora valesse 0 significa che è OFFLINE 
+    p = ntohs(pp);
+    dest[dest_len - 1] = '\0';
+    if(p == 0){
+        printf("%s è OFFLINE\nPuoi inviare comunque e %s li ricevera' quando tornera' online\n", dest, dest);
+        send_port = server_port; // se è offline mando i messaggi al server
+        //invia_dati_a_server(mio_username, username);
+    }
+    else{
+        printf("%s è ONLINE\nINIZIO CHAT con %s\n", dest, dest);
+        send_port = p;
     }
 }
 
@@ -320,7 +351,7 @@ int main(int argc, char** argv){
     //inet_pton(AF_INET, "127.0.0.1", &my_addr.sin_addr);
     ret = bind(listener_sock, (struct sockaddr*)&my_addr, sizeof(my_addr) );
     if(ret<0){
-        perror("Errore bind: \n");
+        perror("Errore bind 1: \n");
         exit(1);
     }
     ret = listen(listener_sock, 10); // metto socket di ascolto effettivamente in ascolto

@@ -47,7 +47,7 @@ void insertLoggedUser(char* username){
     time(&rawtime);
 
     strcpy(temp->username, username);
-    temp->porta = 4242;//porta;
+    temp->port = 4242;//porta;
     temp->login = rawtime; // login a timestamp corrente
     temp->logout = (time_t) NULL; // logout NULL perchè è online
     temp->socket = i; // socket viene salvato per la disconnessione improvvisa
