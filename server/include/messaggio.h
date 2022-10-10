@@ -3,7 +3,7 @@
 #include "./vector.h"
 
 struct Message{
-    char* mess;
+    char mess[1024];
     bool received; // false: inviato e non ricevuto, true: inviato e ricevuto
     time_t send_timestamp;
 };
@@ -17,11 +17,14 @@ struct UserMessages{
     time_t last_timestamp;
 };
 
+extern void userMessagesInit(struct UserMessages *u);
 
 struct StructMessage{
     char dest[1024];
-    vector userChats;
+    vector userMessagesList;
 };
+
+extern void structMessageInit(struct StructMessage *sm);
 
 /*
 struct struct_per_show{

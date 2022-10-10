@@ -45,7 +45,7 @@ void showServerMenu(){
         "\n"
         "1) help --> mostra i dettagli dei comandi\n"
         "2) list --> mostra un elenco degli utenti connessi\n"
-        "3) esc --> chiude il);\n"
+        "3) esc --> chiude il server;\n"
     );
 }
 

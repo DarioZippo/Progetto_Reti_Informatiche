@@ -38,6 +38,7 @@ int main(int argc, char** argv){
         port = 4242;
 
     vector_init(&userRegister);
+    vector_init(&messages);
 
     int ret, newfd, addrlen, len, k, choice;
 

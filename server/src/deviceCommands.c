@@ -206,6 +206,7 @@ void pendentMessage(){
         return;
     }
 
+    printf("Ricerca destinatario %d\n", messages.pfVectorTotal(&messages));
     struct StructMessage* temp_m;
     // cerco destinatario nella lista dei destinatari
     for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
@@ -215,38 +216,43 @@ void pendentMessage(){
             break;   
         }
     }
-
+    printf("post ricerca, fine ricerca: %d\n", found);
     // se non c'è creo nuovo elemento della lista
     if(found == false){
         messages.pfVectorAdd(&messages, malloc(sizeof(struct StructMessage)));
         printf("%d\n", messages.pfVectorTotal(&messages));
         temp_m = (struct StructMessage*)messages.pfVectorGet(&messages, messages.pfVectorTotal(&messages) - 1);
+        structMessageInit(temp_m);
     }
 
+    fflush(stdout);
     // cerco mittente nella lista dei mittenti di quel destinatario
     found = false;
-    vector temp_v = temp_m->userChats;
+    vector *temp_v = &temp_m->userMessagesList;
     struct UserMessages* temp_u;
-    for(int i = 0; i < temp_v.pfVectorTotal(&temp_v); i++){
-        temp_u = (struct UserMessages*)temp_v.pfVectorGet(&temp_v, i);
+    printf("Ricerca mittente %d\n", temp_v->pfVectorTotal(temp_v));
+    for(int i = 0; i < temp_v->pfVectorTotal(temp_v); i++){
+        //printf("%d ", i);
+        temp_u = (struct UserMessages*)temp_v->pfVectorGet(temp_v, i);
         if(strcmp(temp_u->sender, sender) == 0){
             found = true;
             break;   
         }
     }
-
+    printf("\n post ricerca, fine ricerca: %d \n", found);
     // se non c'è creo nuovo elemento
     if(found == false){
-        temp_v.pfVectorAdd(&temp_v, malloc(sizeof(struct UserMessages)));
-        printf("%d\n", temp_v.pfVectorTotal(&temp_v));
-        temp_u = (struct UserMessages*)temp_v.pfVectorGet(&temp_v, temp_v.pfVectorTotal(&temp_v) - 1);
+        temp_v->pfVectorAdd(temp_v, malloc(sizeof(struct UserMessages)));
+        printf("%d\n", temp_v->pfVectorTotal(temp_v));
+        temp_u = (struct UserMessages*)temp_v->pfVectorGet(temp_v, temp_v->pfVectorTotal(temp_v) - 1);
+        userMessagesInit(temp_u);
         strcpy(temp_u->sender, sender);
-        temp_u->total = 0;
     }
 
     // inserisco messaggio in coda alla lista dei messaggi
     // per non scorrere ogni volta la lista mantengo un puntatore alla coda della lista
     struct Message *new_mess = (void*) malloc(sizeof(struct Message));
+    printf("messaggio: %s\n", message);
     strcpy(new_mess->mess, message);
     new_mess->received = false;
     time(&rawtime);

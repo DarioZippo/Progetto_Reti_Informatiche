@@ -268,12 +268,13 @@ void chat(){
             char path[1050];
             FILE* chat_file;
 
-            strcpy(path, "chat_");
+            strcpy(path, "./device/chat_");
             strcat(path, username);
+            strcat(path, "/");
+            strcat(path, dest);
             strcat(path, ".txt");
             chat_file = fopen(path, "a");
 
-            fgets(message, 1024, stdin); // prendo messaggio da stdin
             if(strcmp(message, "\\q\n") == 0){
                 printf("USCITO dalla chat\n");
                 break;
@@ -283,6 +284,9 @@ void chat(){
             fclose(chat_file);
 
             sendMessageToServer(username, dest, message); // funzione per inviare messaggio a server
+            
+            fgets(message, 1024, stdin); // prendo messaggio da stdin
+            //Il primo messaggio è stato inviato PRIMA del while!
         }
     }
     /*
