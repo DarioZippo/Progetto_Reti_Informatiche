@@ -30,7 +30,7 @@ void execDeviceCommand(int command){
         in();
         break;
     case 3:
-        //hanging();
+        hanging();
         break;
     case 4:
         //show();
@@ -106,8 +106,76 @@ void in(){
     }
 }
 
+// funzione che implementa hanging
 void hanging(){
+    char dest[1024], num_mess_string[5];
+    char message_info[1055]; //username(1024) num. mess.(5) timestamp(24)
+    bool found = false;
 
+    printf("HANGING\n");
+    ret = recv(i, (void*)&dest, 1024, 0);
+    if(ret < 0){
+        perror("Errore in fase di ricezione: \n");
+        return;
+    }
+    if(ret == 0){
+        clientDisconnection(i);
+        return;
+    }
+
+    // cerco mittente nella lista dei mittenti
+    struct StructMessage* temp_m;
+    
+    for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
+        temp_m = (struct StructMessage*)messages.pfVectorGet(&messages, i);
+        //printf("Comp: %s con %s\n", temp_m->dest, dest);
+        if(strcmp(temp_m->dest, dest) == 0){
+            found = true;
+            break;   
+        }
+    }
+
+    // se non c'è significa che non ci sono messaggi
+    if(found == false){
+        // mando 0 che il codice che non ci sono messaggi
+        ret = send(i, "ZERO", 4, 0);
+        if(ret < 0)
+            perror("Errore in fase di invio comando: \n");
+                   
+        return;
+    }
+    
+    // scorro tutta la lista dei mittenti
+    // nella struttura dedicata ai messaggi di uno specifico mittente mi salvo tutte le info
+    // che servono per la hanging in modo che ogni volta non devo scorrere la lista dei messaggi
+    vector *temp_v = &temp_m->userMessagesList;
+    struct UserMessages* temp_u;
+
+    for(int j = 0; j < temp_v->pfVectorTotal(temp_v); j++){
+        //printf("%d ", i);
+        temp_u = (struct UserMessages*)temp_v->pfVectorGet(temp_v, j);
+        if(temp_u->total > 0){
+            strcpy(message_info, temp_u->sender);
+            strcat(message_info, " ");
+            sprintf(num_mess_string, "%d", temp_u->total);
+            strcat(message_info, num_mess_string);   
+            strcat(message_info, " ");
+            strcat(message_info, ctime(&temp_u->last_timestamp));
+            printf("%s %d\n", message_info, (int) strlen(message_info));
+            ret = send(i, message_info, 1055, 0);
+            if(ret < 0){
+                perror("Errore in fase di invio messaggio: \n");            
+                return;
+            }
+        }
+    }
+
+    // mando "ZERO" che è anche il codice che significa che non devo ricevere più niente dalla hanging
+    ret = send(i, "ZERO", 4, 0);  
+    if(ret < 0){
+        perror("Errore in fase di invio comando: \n");            
+        return;
+    }  
 }
 
 // funzione per implementare chat
@@ -206,7 +274,7 @@ void pendentMessage(){
         return;
     }
 
-    printf("Ricerca destinatario %d\n", messages.pfVectorTotal(&messages));
+    //printf("Ricerca destinatario %d\n", messages.pfVectorTotal(&messages));
     struct StructMessage* temp_m;
     // cerco destinatario nella lista dei destinatari
     for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
@@ -223,6 +291,7 @@ void pendentMessage(){
         printf("%d\n", messages.pfVectorTotal(&messages));
         temp_m = (struct StructMessage*)messages.pfVectorGet(&messages, messages.pfVectorTotal(&messages) - 1);
         structMessageInit(temp_m);
+        strcpy(temp_m->dest, dest);
     }
 
     fflush(stdout);

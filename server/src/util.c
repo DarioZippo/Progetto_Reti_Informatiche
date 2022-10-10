@@ -14,6 +14,7 @@
 #include "./../include/record.h"
 #include "./../include/util.h"
 #include "./../include/vector.h"
+#include "./../include/messaggio.h"
 
 #include "./../../globals.h"
 
@@ -233,4 +234,16 @@ void restoreLogin(){
 
 void restore(){
     restoreLogin();
+}
+
+void showStructMessages(){
+    struct StructMessage* temp_m;
+    printf("Liste messaggi: ");
+    for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
+        if(i != 0)
+            printf("->");
+        temp_m = (struct StructMessage*)messages.pfVectorGet(&messages, i);
+        printf(" %s ", temp_m->dest);
+    }
+    printf("\n");
 }

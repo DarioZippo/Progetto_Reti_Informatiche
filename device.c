@@ -337,6 +337,50 @@ void chat(){
     */
 }
 
+void hanging(){ 
+    char messages[1055]; // 1055: dim. massima stringa che arriva
+    bool first = true; // variabile booleana per distinguere quando fare una stampa
+
+    // invio il comando per l'hanging
+    uint16_t s_command = htons(3);
+    ret = send(sd, (void*) &s_command, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di invio comando: \n");
+        exit(1);
+    }
+
+    // invio il mio username
+    ret = send(sd, (void*)username, 1024, 0);
+    if(ret < 0){
+        printf("Errore in fase di invio\n");
+        return;
+    }
+
+    printf("FORMATO: Username Numero Messaggi inviati Timestamp piu' recente\n");
+    while(1){
+        ret = recv(sd, (void*)messages, 1055, 0);
+        if(ret < 0){
+            perror("Errore in fase di ricezione: \n");
+            exit(1);
+        }
+        if(ret == 0){
+            printf("DISCONNESSIONE SERVER\n");
+            exit(1);
+        }
+        // quando ricevo ZERO significa che non ci sono più messaggi
+        if(strncmp(messages, "ZERO", 4) == 0){
+            // variabile first serve per gestire la stampa sul terminale
+            if(first == true)
+                printf("Non hai nessun messaggio da visualizzare\n");
+            break;
+        }
+        printf("%s\n", messages);
+        strcpy(messages, "");
+        first = false;
+    }
+        
+}
+
 // funzione per mandare dati per preparare il server a ricevere messaggi pendenti
 // si utilizza quando faccio chat username, ma username è offline
 void sendMessageToServer(char* sender, char* dest, char* message){
@@ -385,7 +429,7 @@ void execUserCommand(char command){
     switch (command)
     {
     case '3':
-        //hanging();
+        hanging();
         break;
     case '4':
         //show();
