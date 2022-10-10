@@ -14,11 +14,15 @@
 #include "./../include/record.h"
 #include "./../include/util.h"
 #include "./../include/vector.h"
+#include "./../include/messaggio.h"
 #include "./../../globals.h"
 
 void execDeviceCommand(int command){
     switch (command)
     {
+    case 10:
+        pendentMessage();
+        break;
     case 1:
         signup();
         break;
@@ -160,4 +164,97 @@ void chat(){
         printf("Errore in fase di invio\n");
         return;
     }
+}
+
+// funzione che server per memorizzare messaggi inviati quando il destinatario è offline
+void pendentMessage(){
+    char sender[1024], dest[1024], message[1024];
+    time_t rawtime;
+    bool found = false;
+
+    printf("PENDENTE\n");
+    // ricevo username del mittente
+    ret = recv(i, (void*)&sender, 1024, 0);
+    if(ret < 0){
+        perror("Errore in fase di ricezione: \n");
+        return;
+    }    
+    if(ret == 0){
+        clientDisconnection(i);
+        return;
+    }
+
+    // ricevo username del destinatario
+    ret = recv(i, (void*)&dest, 1024, 0);
+    if(ret < 0){
+        perror("Errore in fase di ricezione: \n");
+        return;
+    }
+    if(ret == 0){
+        clientDisconnection(i);
+        return;
+    }
+
+    // ricevo messaggio
+    ret = recv(i, (void*)&message, 1024, 0);
+    if(ret < 0){
+        perror("Errore in fase di ricezione: \n");
+        return;
+    }
+    if(ret == 0){
+        clientDisconnection(i);
+        return;
+    }
+
+    struct StructMessage* temp_m;
+    // cerco destinatario nella lista dei destinatari
+    for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
+        temp_m = (struct StructMessage*)messages.pfVectorGet(&messages, i);
+        if(strcmp(temp_m->dest, dest) == 0){
+            found = true;
+            break;   
+        }
+    }
+
+    // se non c'è creo nuovo elemento della lista
+    if(found == false){
+        messages.pfVectorAdd(&messages, malloc(sizeof(struct StructMessage)));
+        printf("%d\n", messages.pfVectorTotal(&messages));
+        temp_m = (struct StructMessage*)messages.pfVectorGet(&messages, messages.pfVectorTotal(&messages) - 1);
+    }
+
+    // cerco mittente nella lista dei mittenti di quel destinatario
+    found = false;
+    vector temp_v = temp_m->userChats;
+    struct UserMessages* temp_u;
+    for(int i = 0; i < temp_v.pfVectorTotal(&temp_v); i++){
+        temp_u = (struct UserMessages*)temp_v.pfVectorGet(&temp_v, i);
+        if(strcmp(temp_u->sender, sender) == 0){
+            found = true;
+            break;   
+        }
+    }
+
+    // se non c'è creo nuovo elemento
+    if(found == false){
+        temp_v.pfVectorAdd(&temp_v, malloc(sizeof(struct UserMessages)));
+        printf("%d\n", temp_v.pfVectorTotal(&temp_v));
+        temp_u = (struct UserMessages*)temp_v.pfVectorGet(&temp_v, temp_v.pfVectorTotal(&temp_v) - 1);
+        strcpy(temp_u->sender, sender);
+        temp_u->total = 0;
+    }
+
+    // inserisco messaggio in coda alla lista dei messaggi
+    // per non scorrere ogni volta la lista mantengo un puntatore alla coda della lista
+    struct Message *new_mess = (void*) malloc(sizeof(struct Message));
+    strcpy(new_mess->mess, message);
+    new_mess->received = false;
+    time(&rawtime);
+    printf("INSERIMENTO: %s\n", ctime(&rawtime));
+    new_mess->send_timestamp = rawtime;
+
+    temp_u->message_list.pfVectorAdd(&temp_u->message_list, new_mess);
+    temp_u->total++;
+    temp_u->last_timestamp = rawtime;
+    temp_u->to_read.pfVectorAdd(&temp_u->to_read, new_mess);
 }

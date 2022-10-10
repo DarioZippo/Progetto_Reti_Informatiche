@@ -28,6 +28,8 @@ char buffer[BUFFER_SIZE];
 
 vector userRegister;
 
+vector messages;
+
 int main(int argc, char** argv){
     // porta di ascolto viene passata come argomento, se non passata si utilizza la 4242
     if(argv[1] != NULL)
@@ -128,7 +130,8 @@ int main(int argc, char** argv){
                 // connesso che ha fatto la richiesta di orario, e va servito
                 // ***senza poi chiudere il socket*** perché l'orario
                 // potrebbe essere chiesto nuovamente al server
-                else {
+                else { // socket di comunicazione
+                    // ricevo la lunghezza del messaggio
                     ret = recv(i, (void*)&s_command, sizeof(uint16_t), 0);
                     if(ret == 0){
                         printf("CHIUSURA client rilevata!\n");
@@ -152,7 +155,7 @@ int main(int argc, char** argv){
                     command = ntohs(s_command);
                     printf("comando client rilevata: %d\n", command);
                     execDeviceCommand(command);
-                    showRegister();
+                    //showRegister();
                 } 
             }
         

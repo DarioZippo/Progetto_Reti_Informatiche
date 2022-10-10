@@ -260,6 +260,120 @@ void chat(){
         printf("%s è ONLINE\nINIZIO CHAT con %s\n", dest, dest);
         send_port = p;
     }
+
+    // sono dentro la chat, invio messaggi finchè l'utente non digita \q
+    if(send_port == server_port){
+        // caso in cui l'altro utente è offline e mando messaggi a server
+        while(1){
+            char path[1050];
+            FILE* chat_file;
+
+            strcpy(path, "chat_");
+            strcat(path, username);
+            strcat(path, ".txt");
+            chat_file = fopen(path, "a");
+
+            fgets(message, 1024, stdin); // prendo messaggio da stdin
+            if(strcmp(message, "\\q\n") == 0){
+                printf("USCITO dalla chat\n");
+                break;
+            }
+
+            fprintf(chat_file, "0\n%s", message);
+            fclose(chat_file);
+
+            sendMessageToServer(username, dest, message); // funzione per inviare messaggio a server
+        }
+    }
+    /*
+    else{ // caso in cui l'altro utente è online e faccio chat P2P
+        int nuovo_sd;
+        struct sockaddr_in peer/*, mio_peer*/;
+    /*    uint16_t p;
+
+        // in peer salvo le info relativo al peer con cui mi voglio connettere
+        p = send_port;
+        memset(&peer, 0, sizeof(peer));
+        peer.sin_family = AF_INET;
+        peer.sin_port = htons(p);
+        inet_pton(AF_INET, "127.0.0.1", &peer.sin_addr);
+
+        // nuovo_sd --> creo nuovo socket per la comunicazione P2P
+        nuovo_sd = socket(AF_INET, SOCK_STREAM, 0);
+        if(nuovo_sd == -1){
+            printf("ERRORE CREAZIONE SOCKET\n");
+            exit(1);
+        }
+        p = port; 
+
+        // mi connetto con l'altro peer
+        ret = connect(nuovo_sd, (struct sockaddr*)&peer, sizeof(peer));
+        if(ret < 0){
+            perror("Errore nella connessione con peer\n");
+            exit(1);
+        }
+        porta_ultimo_peer_chat = porta_invio; 
+        printf("CONNESSO CON ALTRO PEER %d\n", porta_ultimo_peer_chat);
+
+        // aggiorno variabili per gestione chat
+        chat_attiva = 1;
+        strcpy(ultimo_peer_chat, username); 
+        sock_ultima_chat = nuovo_sd;
+        FD_SET(nuovo_sd, &master);
+        if(nuovo_sd > fdmax)
+            fdmax = nuovo_sd;
+
+        leggi_cronologia_messaggi(username);
+
+        fgets(comando, 1024, stdin); // prendo messaggio da stdin
+        // funzione che manda un messaggio all'altro peer
+        // ha come argomento il socker per la comunicazione
+        chatP2P(nuovo_sd); 
+    }
+    */
+}
+
+// funzione per mandare dati per preparare il server a ricevere messaggi pendenti
+// si utilizza quando faccio chat username, ma username è offline
+void sendMessageToServer(char* sender, char* dest, char* message){
+    // Invio il comando PENDENTE
+    uint16_t s_command = htons(10);
+    int ret = send(sd, (void*) &s_command, sizeof(uint16_t), 0);
+    if(ret < 0){
+        printf("Errore in fase di invio\n");
+        return;
+    }
+
+    /*
+    // invio lunghezza messaggio e poi codice a server
+    lmsg = htons(9);
+    ret = send(sd, (void*) &lmsg, sizeof(uint16_t), 0);
+    if(ret < 0){
+        printf("Errore in fase di invio\n");
+        return;
+    }
+    */
+
+    // invio mittente
+    ret = send(sd, (void*)sender, 1024, 0);
+    if(ret < 0){
+        printf("Errore in fase di invio\n");
+        return;
+    }
+
+    // invio destinatario
+    ret = send(sd, (void*)dest, 1024, 0);
+    if(ret < 0){
+        printf("Errore in fase di invio\n");
+        return;
+    }
+
+    //invio messaggio
+    ret = send(sd, (void*)message, 1024, 0);
+    if(ret < 0){
+        printf("Errore in fase di invio\n");
+         return;
+    }
 }
 
 void execUserCommand(char command){

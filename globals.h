@@ -26,4 +26,6 @@ extern char buffer[BUFFER_SIZE];
 
 extern vector userRegister;
 
+extern vector messages;
+
 #endif

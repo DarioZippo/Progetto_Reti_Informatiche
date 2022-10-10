@@ -52,6 +52,9 @@ void showServerMenu(){
 void execServerCommand(int choice){
     switch (choice)
     {
+    case 10:
+        pendentMessage();
+        break;
     case 1:
         help();
         break;
