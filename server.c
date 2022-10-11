@@ -16,7 +16,7 @@
 
 #include "globals.h"
 
-int listener, ret, addrlen, len, sd, i, port, command;
+int listener, ret, addrlen, len, sd, current_s, port, command;
 uint16_t lmsg, s_command;
     
 fd_set master; 
@@ -40,7 +40,8 @@ int main(int argc, char** argv){
     vector_init(&userRegister);
     vector_init(&messages);
 
-    int ret, newfd, addrlen, len, k, choice;
+    int ret, newfd, addrlen, len, k, choice; 
+    char c_choice;
 
     //restore();
     showServerMenu();
@@ -99,14 +100,14 @@ int main(int argc, char** argv){
         }
         
         // Spazzolo i descrittori 
-        for(i = 0; i <= fdmax; i++) { 
+        for(current_s = 0; current_s <= fdmax; current_s++) { 
 
             // controllo se i è pronto 
-            if(FD_ISSET(i, &read_fds)) { 
+            if(FD_ISSET(current_s, &read_fds)) { 
 
                 // se i è il listener, ho ricevuto una richiesta di connessione
                 // (un client ha invocato connect())
-                if(i == sd) { 
+                if(current_s == sd) { 
                     
                     printf("Nuovo client rilevato!\n");
                     fflush(stdout);
@@ -120,37 +121,40 @@ int main(int argc, char** argv){
                     
                     // Aggiorno l'ID del massimo descrittore
                     if(newfd > fdmax){ 
-                        fdmax = newfd; 
+                        fdmax = newfd;
                     }
                 } 
-                else if(i == 0){
-                    choice = read(0, (void*)&s_command, 1);
-                    execServerCommand((int) choice);
+                if(current_s == 0){
+                    c_choice = getc(stdin);
+                    getc(stdin); //bug
+                    choice = c_choice - '0';
+                    //printf("Comando server: %d %c\n", choice, c_choice);
+                    execServerCommand(choice);
                 }
                 // se non è il listener, 'i'' è un descrittore di socket 
                 // connesso che ha fatto la richiesta di orario, e va servito
                 // ***senza poi chiudere il socket*** perché l'orario
                 // potrebbe essere chiesto nuovamente al server
-                else { // socket di comunicazione
+                if(current_s != sd && current_s != 0){ // socket di comunicazione
                     // ricevo la lunghezza del messaggio
-                    ret = recv(i, (void*)&s_command, sizeof(uint16_t), 0);
+                    ret = recv(current_s, (void*)&s_command, sizeof(uint16_t), 0);
                     if(ret == 0){
                         printf("CHIUSURA client rilevata!\n");
                         //      disconnessione_client(i);
                         fflush(stdout);
                         // il client ha chiuso il socket, quindi 
                         // chiudo il socket connesso sul server
-                        close(i);
+                        close(current_s);
                         // rimuovo il descrittore newfd da quelli da monitorare
-                        FD_CLR(i, &master);
+                        FD_CLR(current_s, &master);
                         continue;
                     }
                     if(ret < 0){
                         perror("ERRORE! \n");
                         // si è verificato un errore
-                        close(i);
+                        close(current_s);
                         // rimuovo il descrittore newfd da quelli da monitorare
-                        FD_CLR(i, &master);
+                        FD_CLR(current_s, &master);
                         continue;
                     }
                     command = ntohs(s_command);

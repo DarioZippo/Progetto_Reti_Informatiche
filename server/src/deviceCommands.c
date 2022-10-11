@@ -113,13 +113,13 @@ void hanging(){
     bool found = false;
 
     printf("HANGING\n");
-    ret = recv(i, (void*)&dest, 1024, 0);
+    ret = recv(current_s, (void*)&dest, 1024, 0);
     if(ret < 0){
         perror("Errore in fase di ricezione: \n");
         return;
     }
     if(ret == 0){
-        clientDisconnection(i);
+        clientDisconnection(current_s);
         return;
     }
 
@@ -138,7 +138,7 @@ void hanging(){
     // se non c'è significa che non ci sono messaggi
     if(found == false){
         // mando 0 che il codice che non ci sono messaggi
-        ret = send(i, "ZERO", 4, 0);
+        ret = send(current_s, "ZERO", 4, 0);
         if(ret < 0)
             perror("Errore in fase di invio comando: \n");
                    
@@ -162,7 +162,7 @@ void hanging(){
             strcat(message_info, " ");
             strcat(message_info, ctime(&temp_u->last_timestamp));
             printf("%s %d\n", message_info, (int) strlen(message_info));
-            ret = send(i, message_info, 1055, 0);
+            ret = send(current_s, message_info, 1055, 0);
             if(ret < 0){
                 perror("Errore in fase di invio messaggio: \n");            
                 return;
@@ -171,7 +171,7 @@ void hanging(){
     }
 
     // mando "ZERO" che è anche il codice che significa che non devo ricevere più niente dalla hanging
-    ret = send(i, "ZERO", 4, 0);  
+    ret = send(current_s, "ZERO", 4, 0);  
     if(ret < 0){
         perror("Errore in fase di invio comando: \n");            
         return;
@@ -189,23 +189,23 @@ void chat(){
     uint16_t pp;
 
     printf("CHAT\n");
-    ret = recv(i, (void*)&lmsg, sizeof(uint16_t), 0);
+    ret = recv(current_s, (void*)&lmsg, sizeof(uint16_t), 0);
     if(ret < 0){
         perror("Errore in fase di ricezione: \n");
         return;
     }
     if(ret == 0){
-        clientDisconnection(i);
+        clientDisconnection(current_s);
         return;
     }
     len = ntohs(lmsg);
-    ret = recv(i, (void*)username, len, 0);
+    ret = recv(current_s, (void*)username, len, 0);
     if(ret < 0){
         perror("Errore in fase di ricezione: \n");
         return;
     }
     if(ret == 0){
-        clientDisconnection(i);
+        clientDisconnection(current_s);
         return;
     }
     username[len - 1] = '\0';
@@ -227,7 +227,7 @@ void chat(){
     }
 
     pp = htons(p);
-    ret = send(i, (void*) &pp, sizeof(uint16_t), 0);
+    ret = send(current_s, (void*) &pp, sizeof(uint16_t), 0);
     if(ret < 0){
         printf("Errore in fase di invio\n");
         return;
@@ -242,35 +242,35 @@ void pendentMessage(){
 
     printf("PENDENTE\n");
     // ricevo username del mittente
-    ret = recv(i, (void*)&sender, 1024, 0);
+    ret = recv(current_s, (void*)&sender, 1024, 0);
     if(ret < 0){
         perror("Errore in fase di ricezione: \n");
         return;
     }    
     if(ret == 0){
-        clientDisconnection(i);
+        clientDisconnection(current_s);
         return;
     }
 
     // ricevo username del destinatario
-    ret = recv(i, (void*)&dest, 1024, 0);
+    ret = recv(current_s, (void*)&dest, 1024, 0);
     if(ret < 0){
         perror("Errore in fase di ricezione: \n");
         return;
     }
     if(ret == 0){
-        clientDisconnection(i);
+        clientDisconnection(current_s);
         return;
     }
 
     // ricevo messaggio
-    ret = recv(i, (void*)&message, 1024, 0);
+    ret = recv(current_s, (void*)&message, 1024, 0);
     if(ret < 0){
         perror("Errore in fase di ricezione: \n");
         return;
     }
     if(ret == 0){
-        clientDisconnection(i);
+        clientDisconnection(current_s);
         return;
     }
 

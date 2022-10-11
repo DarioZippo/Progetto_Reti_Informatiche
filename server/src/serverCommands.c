@@ -14,6 +14,7 @@
 #include "./../include/record.h"
 #include "./../include/util.h"
 #include "./../include/vector.h"
+#include "./../include/messaggio.h"
 
 #include "./../../globals.h"
 
@@ -35,8 +36,61 @@ void showRegister(){
     printf("\n");
 }
 
+// comando esc
+// server si disconnette
+// salva i messaggi pendenti in saved_messages.txt
 void esc(){
     printf("Da grande voglio fare l'USCIERE!\n");
+
+    FILE* saved_messages;
+    time_t rawtime;
+
+    struct Record* temp_r;
+    for (int i = 0; i < userRegister.pfVectorTotal(&userRegister); i++){
+        temp_r = userRegister.pfVectorGet(&userRegister, i);
+        if(temp_r->logout == (time_t) NULL){
+            temp_r->logout = time(&rawtime);
+            close(temp_r->socket);
+        }
+    }
+
+    struct StructMessage* temp_sm;
+    vector *temp_uml;
+    struct UserMessages* temp_um;
+    vector *temp_ml;
+    struct Message* temp_m;
+
+    saved_messages = fopen("./server/documents/saved_messages.txt", "w");
+    for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
+        //printf("For 1\n");
+        temp_sm = (struct StructMessage*)messages.pfVectorGet(&messages, i);
+        fprintf(saved_messages, "dest:\n%s\n", temp_sm->dest);
+        
+        temp_uml = &temp_sm->userMessagesList;
+        for(int j = 0; j < temp_uml->pfVectorTotal(temp_uml); j++){
+            //printf("For 2\n");
+            temp_um = (struct UserMessages*)temp_uml->pfVectorGet(temp_uml, j);
+
+            fprintf(saved_messages, "mitt:\n%s\n", temp_um->sender);
+            fprintf(saved_messages, "%d\n", temp_um->total);
+
+            temp_ml = &temp_um->message_list;
+            for(int k = 0; k < temp_ml->pfVectorTotal(temp_ml); k++){
+                //printf("For 3\n");
+                temp_m = (struct Message*)temp_ml->pfVectorGet(temp_ml, k);
+                
+                if(temp_m->received == false){
+                    fprintf(saved_messages, "%s", temp_m->mess);
+                    fprintf(saved_messages, "%d\n", temp_m->received);
+                    fprintf(saved_messages, "%ld\n", temp_m->send_timestamp);
+                }
+            }
+        }
+    }
+    fclose(saved_messages);
+
+    close(sd);
+    exit(0);
 }
 
 void showServerMenu(){

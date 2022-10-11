@@ -116,7 +116,7 @@ bool searchUser(char* user_psw){
 // riceve credenziali, username e password
 void readCredentials(char* username, char* password){
     // riceve lunghezza username
-    ret = recv(i, (void*)&lmsg, sizeof(uint16_t), 0);
+    ret = recv(current_s, (void*)&lmsg, sizeof(uint16_t), 0);
     if(ret < 0){
         perror("Errore in fase di ricezione LEN_US: \n");
         return;
@@ -124,36 +124,36 @@ void readCredentials(char* username, char* password){
     len = ntohs(lmsg);
     printf("Lunghezza us: %d\n", len);
     // riceve username
-    ret = recv(i, (void*)username, len, 0);
+    ret = recv(current_s, (void*)username, len, 0);
     if(ret < 0){
         perror("Errore in fase di ricezione US: \n");
         return;
     }
     if(ret == 0){
-        clientDisconnection(i);
+        clientDisconnection(current_s);
         return;
     }
     username[len] = '\0';
     // riceve lunghezza password
-    ret = recv(i, (void*)&lmsg, sizeof(uint16_t), 0);
+    ret = recv(current_s, (void*)&lmsg, sizeof(uint16_t), 0);
     if(ret < 0){
         perror("Errore in fase di ricezione LEN_P: \n");
         return;
     }
     if(ret == 0){
-        clientDisconnection(i);
+        clientDisconnection(current_s);
         return;
     }
     len = ntohs(lmsg);
     printf("Lunghezza ps: %d\n", len);
     // riceve password
-    ret = recv(i, (void*)password, len, 0);
+    ret = recv(current_s, (void*)password, len, 0);
     if(ret < 0){
         perror("Errore in fase di ricezione P: \n");
         return;
     }
     if(ret == 0){
-        clientDisconnection(i);
+        clientDisconnection(current_s);
         return;
     }
     password[len] = '\0';
@@ -222,7 +222,7 @@ void restoreLogin(){
     }
     // se non l'ha trovato, invia "NO" e il client rileva che il login ha fallito
     if(found == false){
-        /*ret = send(i, "NO\0", 6, 0);
+        /*ret = sendcurrent_s, "NO\0", 6, 0);
         if(ret < 0){
             printf("Errore nell'invio\n");
             return 0;

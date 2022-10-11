@@ -11,7 +11,6 @@ struct Message{
 struct UserMessages{
     char sender[1024];
     vector message_list;
-    //vector coda_lista;
     vector to_read;
     int total;
     time_t last_timestamp;
