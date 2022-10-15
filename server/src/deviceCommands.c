@@ -33,7 +33,7 @@ void execDeviceCommand(int command){
         hanging();
         break;
     case 4:
-        //show();
+        show();
         break;
     case 5:
         chat();
@@ -178,6 +178,131 @@ void hanging(){
     }  
 }
 
+// funzione che implementa show
+void show(){
+    char sender[1024], dest[1024];
+    bool found;
+
+    struct UsersLink* temp_ul;
+
+    printf("SHOW\n");
+
+    // se l'utente ha digitato show x
+    // ricevo lunghezza di x e poi x
+    ret = recv(current_s, (void*)&lmsg, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di ricezione: \n");
+        return;
+    }
+    len = ntohs(lmsg);
+
+    ret = recv(current_s, (void*)sender, len, 0);
+    if(ret < 0){
+        perror("Errore in fase di ricezione: \n");
+        return;
+    }
+    if(ret == 0){
+        clientDisconnection(current_s);
+        return;
+    }
+    
+    // ricevo lunghezza dell'username che esegue show
+    ret = recv(current_s, (void*)&lmsg, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di ricezione: \n");
+        return;
+    }
+    len = ntohs(lmsg);
+    // ricevo username
+    ret = recv(current_s, (void*)dest, len, 0);
+    if(ret < 0){
+        perror("Errore in fase di ricezione: \n");
+        return;
+    }
+    if(ret == 0){
+        clientDisconnection(current_s);
+        return;
+    }
+    //user[strlen(user)-1] = '\0';
+
+    // Aggiorno struttura dati sulle show che sono state eseguite
+    // Inserisco in testa alla lista la struct_per_show contenente le info sulla nuova show
+    temp_ul = (void*) malloc(sizeof(struct UsersLink));
+    strcpy(temp_ul->sender, sender);
+    strcpy(temp_ul->dest, dest);
+    usersLink.pfVectorAdd(&usersLink, temp_ul);
+
+    // cerco destinatario (chi ha eseguito show) nella lista dei destinatari dei messaggi pendenti
+    struct StructMessage* temp_d;
+    
+    for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
+        temp_d = (struct StructMessage*)messages.pfVectorGet(&messages, i);
+        //printf("Comp: %s con %s\n", temp_m->dest, dest);
+        if(strcmp(temp_d->dest, dest) == 0){
+            found = true;
+            break;   
+        }
+    }
+
+    // se non c'è invio 0 che è il codice che indica che non devo ricevere più niente dalla show
+    if(found == false){
+        lmsg = htons(0);
+        ret = send(current_s, &lmsg, sizeof(uint16_t), 0);
+        if(ret < 0)
+            perror("Errore in fase di invio comando: \n");
+        return;
+    }
+
+    // cerco il mittente (x nell'esempio di prima)
+    vector *temp_v = &temp_d->userMessagesList;
+    struct UserMessages* temp_s;
+
+    for(int i = 0; i < temp_v->pfVectorTotal(temp_v); i++){
+        //printf("%d ", i);
+        temp_s = (struct UserMessages*)temp_v->pfVectorGet(temp_v, i);
+        if(strcmp(temp_s->sender, sender) == 0){
+            found = true;
+            break;   
+        }
+    }
+
+    // se non c'è invio 0
+    if(found == false){
+        lmsg = htons(0);
+        ret = send(current_s, &lmsg, sizeof(uint16_t), 0);
+        if(ret < 0)
+            perror("Errore in fase di invio comando: \n");
+        return;
+    }
+
+    // invio numero dei messaggi che sta per ricevere
+    len = temp_s->total;
+    lmsg = htons(len);
+    ret = send(current_s, (void*)&lmsg, sizeof(uint16_t), 0);
+    if(ret < 0){
+        printf("Errore invio\n");
+        return;
+    }
+
+    // invio tutti i messaggi non letti
+    vector *temp_tr;
+    struct Message *temp_m;
+
+    temp_tr = &temp_s->to_read;
+    for(int i = 0; i < temp_tr->pfVectorTotal(temp_tr); i++){
+        temp_m = (struct Message*)temp_tr->pfVectorGet(temp_tr, i);
+        ret = send(current_s, temp_m->mess, 1024, 0);
+        if(ret < 0){
+            printf("Errore invio\n");
+            return;
+        }
+        temp_m->received = true;
+    }
+    
+    temp_s->total = 0;
+    vector_init(&temp_s->to_read);
+}
+
 // funzione per implementare chat
 // riceve lunghezza username_destinatario
 // riceve username_destinatario
@@ -299,7 +424,7 @@ void pendentMessage(){
     found = false;
     vector *temp_v = &temp_sm->userMessagesList;
     struct UserMessages* temp_u;
-    printf("Ricerca mittente %d\n", temp_v->pfVectorTotal(temp_v));
+    //printf("Ricerca mittente %d\n", temp_v->pfVectorTotal(temp_v));
     for(int i = 0; i < temp_v->pfVectorTotal(temp_v); i++){
         //printf("%d ", i);
         temp_u = (struct UserMessages*)temp_v->pfVectorGet(temp_v, i);

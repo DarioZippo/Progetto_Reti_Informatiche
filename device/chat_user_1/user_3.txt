@@ -6,3 +6,13 @@ come
 sta
 0
 user_2?
+0
+messaggio
+0
+di
+0
+mezzo
+0
+messaggio
+0
+intermedio

@@ -25,12 +25,7 @@ struct StructMessage{
 
 extern void structMessageInit(struct StructMessage *sm);
 
-/*
-struct struct_per_show{
-    char mittente[1024];
-    char destinatario[1024];
-    struct struct_per_show* next;
+struct UsersLink{
+    char sender[1024];
+    char dest[1024];
 };
-
-struct struct_per_show* lista_show_fatte;
-*/

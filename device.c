@@ -138,7 +138,7 @@ void peerDisconnection(int sock){
     printf("DISCONNESSIONE PEER\n");
     // se ero connesso stavo avendo una chat o una chat di gruppo con lui
     // dato che finisce la chat aggiorno variabili di chat e chat di gruppo
-    chatState.chat_on = 0;
+    chatState.chat_on = false;
     //chat_gruppo_attiva = 0;
     close(sock); // chiudo il socket
     FD_CLR(sock, &master); // lo elimino dai socket che controllo con select

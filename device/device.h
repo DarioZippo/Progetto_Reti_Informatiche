@@ -24,6 +24,7 @@ fd_set master;
 fd_set read_fds;
 int fdmax, i, listener_sock;
 
+void chatStateInit();
 void readCredentials(char* credentials);
 void sendCredentials(char* credentials, int command);
 void signup();
@@ -32,9 +33,13 @@ int accessMenu();
 void deviceAccess();
 void showDeviceMenu();
 int inputDeviceMenu();
-void execDeviceCommand(int command);
+void execDeviceCommand(char command);
 void hanging();
 void show();
 void chat();
 
+bool searchContact(char* user);
+void sendMessageToServer(char* sender, char* dest, char* message);
+
+void peerDisconnection(int sock);
 void out();

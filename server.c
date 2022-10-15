@@ -29,6 +29,7 @@ char buffer[BUFFER_SIZE];
 vector userRegister;
 
 vector messages;
+vector usersLink;
 
 int main(int argc, char** argv){
     // porta di ascolto viene passata come argomento, se non passata si utilizza la 4242
@@ -39,6 +40,7 @@ int main(int argc, char** argv){
 
     vector_init(&userRegister);
     vector_init(&messages);
+    vector_init(&usersLink);
 
     int ret, newfd, addrlen, len, k, choice; 
     char c_choice;
