@@ -4,4 +4,5 @@ bool searchUser(char* user_psw);
 void readCredentials(char* username, char* password);
 void clientDisconnection(int sock);
 void restoreLogin();
+void restoreMessages();
 void restore();

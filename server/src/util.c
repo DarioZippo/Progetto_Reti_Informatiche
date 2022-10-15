@@ -232,8 +232,166 @@ void restoreLogin(){
     printf("Fine ripristino:\n");
 }
 
+// inizializzo le strutture dati dedicate ai messaggi
+// il file che leggo è saved_messages.txt che contiene tutti i messaggi pendenti
+// il file viene scritto quando si fa esc
+void restoreMessages(){
+    FILE* saved_messages;
+    char *line;
+    int current_type = 0, num_mess, read; 
+    bool primo_mittente = true, primo_non_ric = true, no_read = false;
+    struct StructMessage* temp_sm;
+    struct UserMessages* temp_um;
+    vector* temp_v;
+    struct Message *new_mess;
+
+    saved_messages = fopen("./server/documents/saved_messages.txt", "r");
+    if(saved_messages == NULL){
+        printf("Errore nell'apertura del file\n");
+        return false;
+    }
+    // il codice sottostante serve per ricreare le liste dei messaggi pendenti a partire dal file
+    // sapendo che il file è strutturato in una particolare maniera
+    // quando c'è un nuovo destinatario da inserire nella lista si ha
+    // dest:
+    // username_destinatario
+    // quando c'è un nuovo mittente da inserire nella lista si ha
+    // mitt:
+    // username_mittente
+    // dopo il mittente ci sono i messaggi, per ogni messaggio ci sono 3 righe
+    // messaggio
+    // 0 o 1 (0: non ricevuto, 1: ricevuto)
+    // timestamp invio (salvato come short unsigned int)
+    while(1){
+        if(no_read == false){
+            read = getline(&line, &len, saved_messages);
+            if(read == -1)
+                break;
+        }
+        no_read = false;
+        line[read - 1] = '\0';
+        if(strncmp(line, "dest:", 5) == 0)
+            current_type = 0;
+        if(strncmp(line, "mitt:", 5) == 0)
+            current_type = 1;
+        switch(current_type){
+            //DEST
+            case 0:{
+                messages.pfVectorAdd(&messages, malloc(sizeof(struct StructMessage)));
+                temp_sm = (struct StructMessage*)messages.pfVectorGet(&messages, messages.pfVectorTotal(&messages) - 1);
+                structMessageInit(temp_sm);
+                
+                read = getline(&line, &len, saved_messages);
+                if(read == -1)
+                    break;
+
+                line[read - 1] = '\0';
+                strcpy(temp_sm->dest, line);
+                temp_v = &temp_sm->userMessagesList;
+                temp_v->pfVectorAdd(temp_v, malloc(sizeof(struct UserMessages)));
+                temp_um = (struct UserMessages*)temp_v->pfVectorGet(temp_v, temp_v->pfVectorTotal(temp_v) - 1);
+                userMessagesInit(temp_um);
+                primo_mittente = true;
+                break;
+            }
+            //SENDER
+            case 1:{
+                //Aggiungo la chat relativa al sender
+                if(primo_mittente == true){
+                    temp_v->pfVectorAdd(temp_v, malloc(sizeof(struct UserMessages)));
+                    temp_um = (struct UserMessages*)temp_v->pfVectorGet(temp_v, temp_v->pfVectorTotal(temp_v) - 1);
+                    userMessagesInit(temp_um);
+                }
+                primo_mittente = false;
+                
+                read = getline(&line, &len, saved_messages);
+                if(read == -1)
+                    break;
+
+                line[read - 1] = '\0';
+                strcpy(temp_um->sender, line);
+                
+                //Mi preparo a leggere il primo messaggio
+                new_mess = (void*) malloc(sizeof(struct Message));
+                new_mess->received = false;
+                temp_um->message_list.pfVectorAdd(&temp_um->message_list, new_mess);
+
+                //Mi sposto nella fase di lettura messaggi
+                current_type = 2;
+                primo_non_ric = true;
+                break;
+            }
+            //LETTURA MESSAGGI
+            case 2:{
+                //La lettura prima dello switch è il numero di messaggi
+                num_mess = strtol(line, NULL, 10);
+                temp_um->total = num_mess;
+                
+                read = getline(&line, &len, saved_messages);
+                if(read == -1)
+                    break;
+                
+                //Ho un for grande il triplo del numero di messaggi perchè per ogni messaggi ci sono 3 fasi
+                for(int j = 0; j < num_mess * 3; j++){
+                    //Evito la lettura nella fase 1, perchè già fatta nell'iterazione precedente
+                    //o nel case SEND
+                    if(j%3 != 0){
+                        read = getline(&line, &len, saved_messages);
+                        if(read == -1)
+                            break;
+                    }
+
+                    //Fase 1, copia del messaggio
+                    if(j%3 == 0){
+                        strcpy(new_mess->mess, line);
+                    }
+
+                    //Fase 2, si legge se received, e ci si comporta di conseguenza
+                    if(j%3 == 1){
+                        new_mess->received = strtol(line, NULL, 10);
+                        if(primo_non_ric == true && new_mess->received == false){
+                            temp_um->to_read.pfVectorAdd(&temp_um->to_read, new_mess);
+                            temp_um->total = 1;
+                            primo_non_ric = 0;
+                        }
+                        else{
+                            temp_um->total++;
+                        }
+                    }
+
+                    //Fase 3, si legge il timestamp
+                    if(j%3 == 2){
+                        new_mess->send_timestamp = strtoul(line, NULL, 10);
+                        temp_um->message_list.pfVectorAdd(&temp_um->message_list, new_mess);
+                        temp_um->last_timestamp = new_mess->send_timestamp;
+                        
+                        //Qui si fa la lettura per decidere il prossimo passo
+                        //Se reiterarsi nel for o spostarsi nello switch più esterno
+                        read = getline(&line, &len, saved_messages);
+                        if(read == -1)
+                            break;
+                        if(strncmp(line, "mitt:", 5) == 0){
+                            current_type = 1;
+                            no_read = true;
+                            break;
+                        }
+                        if(strncmp(line, "dest:", 5) == 0){
+                            current_type = 0;
+                            no_read = true;
+                            break;
+                        }
+                        new_mess = (void*) malloc(sizeof(struct Message));
+                    }
+                }
+            }
+        }
+    }
+    fclose(saved_messages);
+}
+
 void restore(){
-    restoreLogin();
+    restoreMessages();
+    //restoreLogin();
 }
 
 void showStructMessages(){

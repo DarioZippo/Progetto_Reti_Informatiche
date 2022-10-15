@@ -43,7 +43,7 @@ int main(int argc, char** argv){
     int ret, newfd, addrlen, len, k, choice; 
     char c_choice;
 
-    //restore();
+    restore();
     showServerMenu();
 
     /* Creazione socket */

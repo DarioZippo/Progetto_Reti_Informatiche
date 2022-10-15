@@ -275,11 +275,11 @@ void pendentMessage(){
     }
 
     //printf("Ricerca destinatario %d\n", messages.pfVectorTotal(&messages));
-    struct StructMessage* temp_m;
+    struct StructMessage* temp_sm;
     // cerco destinatario nella lista dei destinatari
     for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
-        temp_m = (struct StructMessage*)messages.pfVectorGet(&messages, i);
-        if(strcmp(temp_m->dest, dest) == 0){
+        temp_sm = (struct StructMessage*)messages.pfVectorGet(&messages, i);
+        if(strcmp(temp_sm->dest, dest) == 0){
             found = true;
             break;   
         }
@@ -289,15 +289,15 @@ void pendentMessage(){
     if(found == false){
         messages.pfVectorAdd(&messages, malloc(sizeof(struct StructMessage)));
         printf("%d\n", messages.pfVectorTotal(&messages));
-        temp_m = (struct StructMessage*)messages.pfVectorGet(&messages, messages.pfVectorTotal(&messages) - 1);
-        structMessageInit(temp_m);
-        strcpy(temp_m->dest, dest);
+        temp_sm = (struct StructMessage*)messages.pfVectorGet(&messages, messages.pfVectorTotal(&messages) - 1);
+        structMessageInit(temp_sm);
+        strcpy(temp_sm->dest, dest);
     }
 
     fflush(stdout);
     // cerco mittente nella lista dei mittenti di quel destinatario
     found = false;
-    vector *temp_v = &temp_m->userMessagesList;
+    vector *temp_v = &temp_sm->userMessagesList;
     struct UserMessages* temp_u;
     printf("Ricerca mittente %d\n", temp_v->pfVectorTotal(temp_v));
     for(int i = 0; i < temp_v->pfVectorTotal(temp_v); i++){
