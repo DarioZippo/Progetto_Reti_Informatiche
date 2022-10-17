@@ -399,7 +399,7 @@ void show(){
     }
 
     // invio lunghezza username e poi username
-    dest_len = strlen(dest);
+    dest_len = strlen(dest) - 1;
     lmsg = htons(dest_len);
     ret = send(sd, (void*) &lmsg, sizeof(uint16_t), 0);
     if(ret < 0){

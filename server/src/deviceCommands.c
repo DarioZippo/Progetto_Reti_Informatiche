@@ -253,7 +253,7 @@ void show(){
             perror("Errore in fase di invio comando: \n");
         return;
     }
-
+    found = false;
     // cerco il mittente (x nell'esempio di prima)
     vector *temp_v = &temp_d->userMessagesList;
     struct UserMessages* temp_s;
@@ -261,7 +261,9 @@ void show(){
     for(int i = 0; i < temp_v->pfVectorTotal(temp_v); i++){
         //printf("%d ", i);
         temp_s = (struct UserMessages*)temp_v->pfVectorGet(temp_v, i);
-        if(strcmp(temp_s->sender, sender) == 0){
+        //printf("%s\n%s\n", sender, temp_s->sender);
+        len = strlen(sender);
+        if(strncmp(temp_s->sender, sender, len) == 0){
             found = true;
             break;   
         }
@@ -275,7 +277,7 @@ void show(){
             perror("Errore in fase di invio comando: \n");
         return;
     }
-
+    
     // invio numero dei messaggi che sta per ricevere
     len = temp_s->total;
     lmsg = htons(len);
@@ -302,6 +304,7 @@ void show(){
     }
     
     temp_s->total = 0;
+    //vector_init(&temp_s->message_list);
     vector_init(&temp_s->to_read);
 }
 
