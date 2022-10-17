@@ -381,6 +381,84 @@ void hanging(){
         
 }
 
+void show(){
+    char dest[1024], messagge[1024];
+    int dest_len, i, mess_number;
+    uint16_t q_mess;
+
+    printf("SHOW\n"
+        "Inserire lo username del destinatario:\n");
+    fgets(dest, 1024, stdin);
+
+    // invio il comando per SHOW
+    uint16_t s_command = htons(4);
+    ret = send(sd, (void*) &s_command, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di invio comando: \n");
+        exit(1);
+    }
+
+    // invio lunghezza username e poi username
+    dest_len = strlen(dest);
+    lmsg = htons(dest_len);
+    ret = send(sd, (void*) &lmsg, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di invio comando: \n");
+        exit(1);
+    }
+    ret = send(sd, dest, dest_len, 0);
+    if(ret < 0){
+        printf("Errore nella ricezione\n");
+        return;
+    }
+    
+    // invio lunghezza del mio username e poi il mio username
+    lmsg = htons(username_len);
+    ret = send(sd, (void*) &lmsg, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di invio comando: \n");
+        exit(1);
+    }
+    ret = send(sd, username, username_len, 0);
+    if(ret < 0){
+        perror("Errore in fase di invio comando: \n");
+        exit(1);
+    }
+    
+    // ricevo il numero di messaggi che sto per ricevere
+    ret = recv(sd, (void*) &q_mess, sizeof(uint16_t), 0);
+    if(ret < 0){
+        printf("Errore nella ricezione\n");
+        return;
+    }
+    if(ret == 0){
+        printf("DISCONNESSIONE SERVER\n");
+        exit(1);
+    }
+    mess_number = ntohs(q_mess);
+    if(mess_number == 0){
+        printf("Nessun messaggio\n");
+        return;
+    }
+
+    printf("Messaggi che ti ha inviato mentri eri offline: %d\n", mess_number);
+    // ricevo i messaggi, conoscendo il numero di messaggi non serve un codice per indicare la fine
+    for(i = 0; i < mess_number; i++){
+        ret = recv(sd, (void*)messagge, 1024, 0);
+        if(ret < 0){
+            perror("Errore in fase di ricezione: \n");
+            return;
+        }
+        if(ret == 0){
+            printf("DISCONNESSIONE SERVER\n");
+            exit(1);
+        }
+        printf("%s", messagge);
+        strcpy(messagge, "");
+    }
+    printf("\n");
+}
+
 // funzione per mandare dati per preparare il server a ricevere messaggi pendenti
 // si utilizza quando faccio chat username, ma username è offline
 void sendMessageToServer(char* sender, char* dest, char* message){
@@ -432,7 +510,7 @@ void execUserCommand(char command){
         hanging();
         break;
     case '4':
-        //show();
+        show();
         break;
     case '5':
         chat();

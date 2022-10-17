@@ -288,21 +288,15 @@ void restoreMessages(){
                 line[read - 1] = '\0';
                 strcpy(temp_sm->dest, line);
                 temp_v = &temp_sm->userMessagesList;
-                temp_v->pfVectorAdd(temp_v, malloc(sizeof(struct UserMessages)));
-                temp_um = (struct UserMessages*)temp_v->pfVectorGet(temp_v, temp_v->pfVectorTotal(temp_v) - 1);
-                userMessagesInit(temp_um);
                 primo_mittente = true;
                 break;
             }
             //SENDER
             case 1:{
                 //Aggiungo la chat relativa al sender
-                if(primo_mittente == true){
-                    temp_v->pfVectorAdd(temp_v, malloc(sizeof(struct UserMessages)));
-                    temp_um = (struct UserMessages*)temp_v->pfVectorGet(temp_v, temp_v->pfVectorTotal(temp_v) - 1);
-                    userMessagesInit(temp_um);
-                }
-                primo_mittente = false;
+                temp_v->pfVectorAdd(temp_v, malloc(sizeof(struct UserMessages)));
+                temp_um = (struct UserMessages*)temp_v->pfVectorGet(temp_v, temp_v->pfVectorTotal(temp_v) - 1);
+                userMessagesInit(temp_um);
                 
                 read = getline(&line, &len, saved_messages);
                 if(read == -1)
@@ -314,7 +308,6 @@ void restoreMessages(){
                 //Mi preparo a leggere il primo messaggio
                 new_mess = (void*) malloc(sizeof(struct Message));
                 new_mess->received = false;
-                temp_um->message_list.pfVectorAdd(&temp_um->message_list, new_mess);
 
                 //Mi sposto nella fase di lettura messaggi
                 current_type = 2;
@@ -352,7 +345,7 @@ void restoreMessages(){
                         if(primo_non_ric == true && new_mess->received == false){
                             temp_um->to_read.pfVectorAdd(&temp_um->to_read, new_mess);
                             temp_um->total = 1;
-                            primo_non_ric = 0;
+                            primo_non_ric = false;
                         }
                         else{
                             temp_um->total++;
@@ -391,17 +384,38 @@ void restoreMessages(){
 
 void restore(){
     restoreMessages();
+    showChats();
     //restoreLogin();
 }
 
-void showStructMessages(){
+void showChats(){
     struct StructMessage* temp_m;
-    printf("Liste messaggi: ");
+    printf("Liste structMessage: ");
     for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
-        if(i != 0)
-            printf("->");
         temp_m = (struct StructMessage*)messages.pfVectorGet(&messages, i);
-        printf(" %s ", temp_m->dest);
+        printf("sm: %s\n", temp_m->dest);
+        showUserMessages(&temp_m->userMessagesList);
     }
     printf("\n");
+}
+
+void showUserMessages(vector *v){
+    struct UserMessages* temp_um;
+    printf("Lista mittenti: ");
+    for(int i = 0; i < v->pfVectorTotal(v); i++){
+        temp_um = (struct UserMessages*)v->pfVectorGet(v, i);
+        printf("m: %s\n", temp_um->sender);
+        showMessages(&temp_um->message_list);
+    }
+}
+
+void showMessages(vector *v){
+    struct Message* temp_m;
+    printf("Lista messaggi: ");
+    for(int i = 0; i < v->pfVectorTotal(v); i++){
+        if(i != 0)
+            printf(" -> ");
+        temp_m = (struct Message*)v->pfVectorGet(v, i);
+        printf("m: %s", temp_m->mess);
+    }
 }

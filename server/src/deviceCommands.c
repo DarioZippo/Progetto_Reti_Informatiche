@@ -151,8 +151,9 @@ void hanging(){
     vector *temp_v = &temp_m->userMessagesList;
     struct UserMessages* temp_u;
 
+    printf("%d\n", temp_v->pfVectorTotal(temp_v));
     for(int j = 0; j < temp_v->pfVectorTotal(temp_v); j++){
-        //printf("%d ", i);
+        //printf("%d ", j);
         temp_u = (struct UserMessages*)temp_v->pfVectorGet(temp_v, j);
         if(temp_u->total > 0){
             strcpy(message_info, temp_u->sender);
@@ -288,7 +289,8 @@ void show(){
     vector *temp_tr;
     struct Message *temp_m;
 
-    temp_tr = &temp_s->to_read;
+    //temp_tr = &temp_s->to_read;
+    temp_tr = &temp_s->message_list;
     for(int i = 0; i < temp_tr->pfVectorTotal(temp_tr); i++){
         temp_m = (struct Message*)temp_tr->pfVectorGet(temp_tr, i);
         ret = send(current_s, temp_m->mess, 1024, 0);
