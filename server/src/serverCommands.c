@@ -27,10 +27,10 @@ void help(){
 void showRegister(){
     struct Record* temp;
     printf("Utenti connessi: ");
-    for (int i = 0; i < userRegister.pfVectorTotal(&userRegister); i++){
+    for (int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
         if(i != 0)
             printf("->");
-        temp = (struct Record*)userRegister.pfVectorGet(&userRegister, i);
+        temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
         printf(" %s ", temp->username);
     }
     printf("\n");
@@ -46,8 +46,8 @@ void esc(){
     time_t rawtime;
 
     struct Record* temp_r;
-    for (int i = 0; i < userRegister.pfVectorTotal(&userRegister); i++){
-        temp_r = userRegister.pfVectorGet(&userRegister, i);
+    for (int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
+        temp_r = userRegister.records.pfVectorGet(&userRegister.records, i);
         if(temp_r->logout == (time_t) NULL){
             temp_r->logout = time(&rawtime);
             close(temp_r->socket);

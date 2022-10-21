@@ -26,7 +26,7 @@ int fdmax;
 struct sockaddr_in my_addr, cl_addr;
 char buffer[BUFFER_SIZE];
 
-vector userRegister;
+struct UserRegister userRegister;
 
 vector messages;
 vector usersLink;
@@ -38,7 +38,7 @@ int main(int argc, char** argv){
     else
         port = 4242;
 
-    vector_init(&userRegister);
+    userRegisterInit(&userRegister);
     vector_init(&messages);
     vector_init(&usersLink);
 

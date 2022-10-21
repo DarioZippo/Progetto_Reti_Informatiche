@@ -24,7 +24,7 @@ extern int fdmax;
 extern struct sockaddr_in my_addr, cl_addr;
 extern char buffer[BUFFER_SIZE];
 
-extern vector userRegister;
+extern struct UserRegister userRegister;
 
 extern vector messages;
 extern vector usersLink;

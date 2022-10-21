@@ -10,8 +10,8 @@ device.o: device.c
 	gcc -c -Wall -o device.o device.c
 
 # make rule per il server 
-serv: server.o serverCommands.o deviceCommands.o util.o vector.o messaggio.o
-	gcc -Wall server.o serverCommands.o deviceCommands.o util.o vector.o messaggio.o -o serv
+serv: server.o serverCommands.o deviceCommands.o util.o vector.o messaggio.o record.o
+	gcc -Wall server.o serverCommands.o deviceCommands.o util.o vector.o messaggio.o record.o -o serv
 
 server.o: server.c
 	gcc -Wall -c -g server.o server.c 
@@ -30,6 +30,9 @@ vector.o: server/src/vector.c
 
 messaggio.o: server/src/messaggio.c
 	gcc -Wall -c -g server/src/messaggio.c
+
+record.o: server/src/record.c
+	gcc -Wall -c -g server/src/record.c
 
 # pulizia dei file della compilazione (eseguito con make clean)
 clean:

@@ -9,7 +9,7 @@ struct ChatState{
     // salvo il socket e l'username dell'ultimo peer con cui ho chattato
     bool chat_on; 
     int last_chat_sock;
-    char last_chat_peer[1024];
+    int last_chat_peer;
 
     // Variabili gestione gruppo
     // quando creo un gruppo entrano subito 3 peer

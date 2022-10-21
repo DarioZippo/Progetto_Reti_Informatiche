@@ -28,9 +28,9 @@ void insertLoggedUser(char* username){
     int i;
     
     struct Record* temp;
-    for (i = 0; i < userRegister.pfVectorTotal(&userRegister); i++)
+    for (i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++)
     {
-        temp = (struct Record*)userRegister.pfVectorGet(&userRegister, i);
+        temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
         if(strcmp(temp->username, username) == 0){
             found = true;
             break;
@@ -39,9 +39,9 @@ void insertLoggedUser(char* username){
     
     // se non c'è creo nuovo elemento della lista
     if(found == false){
-        userRegister.pfVectorAdd(&userRegister, malloc(sizeof(struct Record)));
-        printf("%d\n", userRegister.pfVectorTotal(&userRegister));
-        temp = (struct Record*)userRegister.pfVectorGet(&userRegister, userRegister.pfVectorTotal(&userRegister) - 1);
+        userRegister.records.pfVectorAdd(&userRegister.records, malloc(sizeof(struct Record)));
+        printf("%d\n", userRegister.records.pfVectorTotal(&userRegister.records));
+        temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, userRegister.records.pfVectorTotal(&userRegister.records) - 1);
     }
     printf("Temp individuato\n");
     // aggiorno entry del server
@@ -53,6 +53,8 @@ void insertLoggedUser(char* username){
     temp->logout = (time_t) NULL; // logout NULL perchè è online
     temp->socket = i; // socket viene salvato per la disconnessione improvvisa
     writeLoginOnFile(username, record, len, 4242/*porta*/, rawtime);
+
+    userRegister.onlineCounter++;
 }
 
 // scrivo login su file di log
@@ -172,9 +174,9 @@ void clientDisconnection(int sock){
     int i;
     
     struct Record* temp;
-    for (i = 0; i < userRegister.pfVectorTotal(&userRegister); i++)
+    for (i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++)
     {
-        temp = (struct Record*)userRegister.pfVectorGet(&userRegister, i);
+        temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
         if(temp->socket == sock){
             found = true;
             break;
@@ -184,6 +186,7 @@ void clientDisconnection(int sock){
         return;
 
     temp->logout = time(&rawtime); // imposto timestamp logout
+    userRegister.onlineCounter--;
     
     perror("Discussione client \n");
     close(sock); // chiudo socket

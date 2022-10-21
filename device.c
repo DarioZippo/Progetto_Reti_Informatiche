@@ -289,11 +289,11 @@ void chat(){
             //Il primo messaggio è stato inviato PRIMA del while!
         }
     }
-    /*
+    
     else{ // caso in cui l'altro utente è online e faccio chat P2P
-        int nuovo_sd;
+        int new_sd;
         struct sockaddr_in peer/*, mio_peer*/;
-    /*    uint16_t p;
+        uint16_t p;
 
         // in peer salvo le info relativo al peer con cui mi voglio connettere
         p = send_port;
@@ -303,41 +303,136 @@ void chat(){
         inet_pton(AF_INET, "127.0.0.1", &peer.sin_addr);
 
         // nuovo_sd --> creo nuovo socket per la comunicazione P2P
-        nuovo_sd = socket(AF_INET, SOCK_STREAM, 0);
-        if(nuovo_sd == -1){
+        new_sd = socket(AF_INET, SOCK_STREAM, 0);
+        if(new_sd == -1){
             printf("ERRORE CREAZIONE SOCKET\n");
             exit(1);
         }
         p = port; 
 
         // mi connetto con l'altro peer
-        ret = connect(nuovo_sd, (struct sockaddr*)&peer, sizeof(peer));
+        ret = connect(new_sd, (struct sockaddr*)&peer, sizeof(peer));
         if(ret < 0){
             perror("Errore nella connessione con peer\n");
             exit(1);
         }
-        porta_ultimo_peer_chat = porta_invio; 
-        printf("CONNESSO CON ALTRO PEER %d\n", porta_ultimo_peer_chat);
+        chatState.last_chat_peer = send_port; 
+        printf("CONNESSO CON ALTRO PEER %d\n", chatState.last_chat_peer);
 
         // aggiorno variabili per gestione chat
-        chat_attiva = 1;
-        strcpy(ultimo_peer_chat, username); 
-        sock_ultima_chat = nuovo_sd;
-        FD_SET(nuovo_sd, &master);
-        if(nuovo_sd > fdmax)
-            fdmax = nuovo_sd;
+        chatState.chat_on = true;
+        strcpy(chatState.last_chat_peer, username); 
+        chatState.last_chat_sock = new_sd;
+        FD_SET(new_sd, &master);
+        if(new_sd > fdmax)
+            fdmax = new_sd;
 
-        leggi_cronologia_messaggi(username);
+        //leggi_cronologia_messaggi(username);
 
-        fgets(comando, 1024, stdin); // prendo messaggio da stdin
+        fgets(message, 1024, stdin); // prendo messaggio da stdin
         // funzione che manda un messaggio all'altro peer
         // ha come argomento il socker per la comunicazione
-        chatP2P(nuovo_sd); 
+        chatP2P(new_sd, message);
     }
-    */
 }
 
-void hanging(){ 
+// funzione per fare chat P2P
+void chatP2P(int new_sd, char* message){
+    while(1){
+        char path[1050];
+        FILE* chat_file;
+
+        strcpy(path, "./device/chat_");
+        strcat(path, username);
+        strcat(path, "/");
+        strcat(path, chatState.last_chat_peer);
+        strcat(path, ".txt");
+        chat_file = fopen(path, "a");
+
+        // esco dalla chat
+        if(strcmp(message, "\\q\n") == 0){
+            ret = send(new_sd, "FINE\0", 1024, 0);
+            if(ret < 0){
+                printf("Errore in fase di invio\n");
+                return;
+            }
+            close(new_sd);
+            FD_CLR(new_sd, &master);
+            chatState.chat_on = false;
+            printf("USCITO dalla chat\n");
+            return;
+        }
+        // ricevo e visualizzo utenti online
+        if(strcmp(message, "\\u\n") == 0){
+            showOnlineUsers();
+            return;
+        }
+        // aggiungo componente al gruppo
+        if(strncmp(message, "\\a ", 3) == 0){
+            //aggiungi_a_gruppo(nuovo_sd);
+            return;
+        }
+        // condivido file
+        if(strncmp(message, "share ", 6) == 0){
+            //share(sock_ultima_chat);
+            return;
+        }
+
+        // invio mittente e poi messaggio
+        ret = send(new_sd, (void*)username, 1024, 0);
+        if(ret < 0){
+            printf("Errore in fase di invio\n");
+            return;
+        }
+        ret = send(new_sd, (void*)message, 1024, 0);
+        if(ret < 0){
+            printf("Errore in fase di invio\n");
+            return;
+        }
+            
+        fgets(message, 1024, stdin); // prendo messaggio da stdin
+        //Il primo messaggio è stato inviato PRIMA del while!
+    }
+}
+
+void showOnlineUsers(){
+    char current_online_user[1024];
+    uint16_t len;
+
+    printf("UTENTI ONLINE\n");
+
+    // invio il comando per ricevere gli utenti online
+    uint16_t s_command = htons(11);
+    ret = send(sd, (void*) &s_command, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di invio comando: \n");
+        exit(1);
+    }
+
+    //ricevo il numero di utenti online e stampo
+    uint16_t s_online_counter;
+    ret = recv(sd, (void*)&s_online_counter, sizeof(uint16_t), 0);
+    int online_counter = ntohs(s_online_counter);
+
+    printf("Numero utenti online: %d", online_counter);
+    // ricevo da server tutti gli username
+    // sd --> socket comunicazione con server
+    for (int i = 0; i < online_counter; i++)
+    {
+        ret = recv(sd, current_online_user, 1024, 0);
+        if(ret < 0){
+            printf("Errore ricezione\n");
+            exit(1);
+        }
+        if(ret == 0){
+            printf("DISCONNESSIONE SERVER\n");
+            exit(1);
+        }
+        printf("%s\n", current_online_user);
+    }
+}
+
+void hanging(){
     char messages[1055]; // 1055: dim. massima stringa che arriva
     bool first = true; // variabile booleana per distinguere quando fare una stampa
 

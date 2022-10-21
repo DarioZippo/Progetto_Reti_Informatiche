@@ -37,6 +37,8 @@ void execDeviceCommand(char command);
 void hanging();
 void show();
 void chat();
+void chatP2P();
+void showOnlineUsers();
 
 bool searchContact(char* user);
 void sendMessageToServer(char* sender, char* dest, char* message);

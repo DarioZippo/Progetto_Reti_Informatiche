@@ -20,6 +20,9 @@
 void execDeviceCommand(int command){
     switch (command)
     {
+    case 11:
+        showOnlineUsers();
+        break;
     case 10:
         pendentMessage();
         break;
@@ -343,8 +346,8 @@ void chat(){
     //printf("%s con len: %d, %d\n", username, strlen(username), len);
 
     struct Record* temp;
-    for(int i = 0; i < userRegister.pfVectorTotal(&userRegister); i++){
-        temp = (struct Record*)userRegister.pfVectorGet(&userRegister, i);
+    for(int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
+        temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
         //printf("Temp: %s con len: %d\n", temp->username, strlen(temp->username));
         if(strcmp(temp->username, username) == 0){
             printf("Trovato nella lista\n");
@@ -462,4 +465,30 @@ void pendentMessage(){
     temp_u->total++;
     temp_u->last_timestamp = rawtime;
     temp_u->to_read.pfVectorAdd(&temp_u->to_read, new_mess);
+}
+
+void showOnlineUsers(){
+    printf("INVIA UTENTI ONLINE\n");
+
+    // invio il numero di utenti online
+    uint16_t s_onlineCounter = htons(userRegister.onlineCounter);
+    ret = send(current_s, (void*) &s_onlineCounter, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di invio comando: \n");
+        exit(1);
+    }
+
+    struct Record* temp;
+    // invio tutti gli utenti che sono online
+    for(int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
+        temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
+        //printf("Temp: %s con len: %d\n", temp->username, strlen(temp->username));
+        if(temp->logout == (time_t) NULL){ // timestamp_logout == NULL significa che è online
+            ret = send(current_s, temp->username, 1024, 0);
+            if(ret < 0){
+                printf("Errore invio\n");
+                return;
+            }
+        }
+    }
 }

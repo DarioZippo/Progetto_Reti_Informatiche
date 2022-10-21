@@ -4,4 +4,5 @@ void hanging();
 void show();
 void chat();
 void pendentMessage();
+void showOnlineUsers();
 void out();
