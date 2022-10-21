@@ -1,22 +1,2 @@
 0
-ciao
-0
-come
-0
-stai
-0
-ciao
-0
-sono user_2
-0
-back
-0
-sono
-0
-user_2
-0
-sono
-0
-user_2
-0
-back
+\u

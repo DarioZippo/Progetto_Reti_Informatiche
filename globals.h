@@ -14,7 +14,7 @@
 //MANDARE IL CLIENT
 #include "./server/include/vector.h"
 
-extern int listener, ret, addrlen, command, len, sd, current_s, port;
+extern int listener, ret, addrlen, command, len, sd, current_s;
 extern uint16_t lmsg, s_command;
     
 extern fd_set master; 

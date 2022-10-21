@@ -142,19 +142,13 @@ int main(int argc, char** argv){
                     ret = recv(current_s, (void*)&s_command, sizeof(uint16_t), 0);
                     if(ret == 0){
                         printf("CHIUSURA client rilevata!\n");
-                        //      disconnessione_client(i);
-                        fflush(stdout);
-                        // il client ha chiuso il socket, quindi 
-                        // chiudo il socket connesso sul server
-                        close(current_s);
-                        // rimuovo il descrittore newfd da quelli da monitorare
-                        FD_CLR(current_s, &master);
+                        clientDisconnection(current_s);
                         continue;
                     }
                     if(ret < 0){
                         perror("ERRORE! \n");
                         // si è verificato un errore
-                        close(current_s);
+                        clientDisconnection(current_s);
                         // rimuovo il descrittore newfd da quelli da monitorare
                         FD_CLR(current_s, &master);
                         continue;

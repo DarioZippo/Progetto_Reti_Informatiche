@@ -99,6 +99,14 @@ void in(){
     char credentials[BUFFER_SIZE]; 
     readCredentials(credentials);
     sendCredentials(credentials, 2);
+    
+    // invia la porta su cui è connesso
+    ret = send(sd, &port, sizeof(int), 0);
+    if(ret < 0){
+        printf("Errore nell'invio\n");
+        return;
+    }
+
     logged = true;
     //Gestione della connessione post
 }
@@ -316,12 +324,12 @@ void chat(){
             perror("Errore nella connessione con peer\n");
             exit(1);
         }
-        chatState.last_chat_peer = send_port; 
-        printf("CONNESSO CON ALTRO PEER %d\n", chatState.last_chat_peer);
+        chatState.last_port_chat_peer = send_port; 
+        printf("CONNESSO CON ALTRO PEER %d\n", chatState.last_port_chat_peer);
 
         // aggiorno variabili per gestione chat
         chatState.chat_on = true;
-        strcpy(chatState.last_chat_peer, username); 
+        strcpy(chatState.last_chat_peer, dest); 
         chatState.last_chat_sock = new_sd;
         FD_SET(new_sd, &master);
         if(new_sd > fdmax)
@@ -329,7 +337,7 @@ void chat(){
 
         //leggi_cronologia_messaggi(username);
 
-        fgets(message, 1024, stdin); // prendo messaggio da stdin
+        //fgets(message, 1024, stdin); // prendo messaggio da stdin
         // funzione che manda un messaggio all'altro peer
         // ha come argomento il socker per la comunicazione
         chatP2P(new_sd, message);
@@ -337,7 +345,7 @@ void chat(){
 }
 
 // funzione per fare chat P2P
-void chatP2P(int new_sd, char* message){
+void chatP2P(int new_sd, char message[1024]){
     while(1){
         char path[1050];
         FILE* chat_file;
@@ -414,11 +422,12 @@ void showOnlineUsers(){
     ret = recv(sd, (void*)&s_online_counter, sizeof(uint16_t), 0);
     int online_counter = ntohs(s_online_counter);
 
-    printf("Numero utenti online: %d", online_counter);
+    printf("Numero utenti online: %d\n", online_counter);
     // ricevo da server tutti gli username
     // sd --> socket comunicazione con server
     for (int i = 0; i < online_counter; i++)
     {
+        //printf("%d\n", i);
         ret = recv(sd, current_online_user, 1024, 0);
         if(ret < 0){
             printf("Errore ricezione\n");

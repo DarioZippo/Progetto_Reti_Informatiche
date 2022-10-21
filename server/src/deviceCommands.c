@@ -89,11 +89,22 @@ void signup(){
 // funzione per l'accesso di un utente già registrato
 void in(){
     char username[1024], password[1024], user_psw[2048];
+    int port;
     bool found;
 
     printf("IN\n");
     readCredentials(username, password);
     
+    ret = recv(current_s, (void*)&port, sizeof(int), 0);
+    if(ret < 0){
+        printf("Errore nella ricezione\n");
+        return;
+    }
+    if(ret == 0){
+        clientDisconnection(current_s);
+        return;
+    }
+
     strcpy(user_psw, username);
     strcat(user_psw, " ");
     strcat(user_psw, password);
@@ -105,7 +116,7 @@ void in(){
         return;
     }
     else if(found == true){
-        insertLoggedUser(username);
+        insertLoggedUser(username, port);
     }
 }
 
@@ -481,6 +492,7 @@ void showOnlineUsers(){
     struct Record* temp;
     // invio tutti gli utenti che sono online
     for(int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
+        //printf("%d\n", i);
         temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
         //printf("Temp: %s con len: %d\n", temp->username, strlen(temp->username));
         if(temp->logout == (time_t) NULL){ // timestamp_logout == NULL significa che è online

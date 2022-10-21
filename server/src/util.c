@@ -18,7 +18,7 @@
 
 #include "./../../globals.h"
 
-void insertLoggedUser(char* username){
+void insertLoggedUser(char* username, int port){
     int len = strlen(username);
     char record[1500];
     time_t rawtime;
@@ -48,10 +48,10 @@ void insertLoggedUser(char* username){
     time(&rawtime);
 
     strcpy(temp->username, username);
-    temp->port = 4242;//porta;
+    temp->port = port;
     temp->login = rawtime; // login a timestamp corrente
     temp->logout = (time_t) NULL; // logout NULL perchè è online
-    temp->socket = i; // socket viene salvato per la disconnessione improvvisa
+    temp->socket = current_s; // socket viene salvato per la disconnessione improvvisa
     writeLoginOnFile(username, record, len, 4242/*porta*/, rawtime);
 
     userRegister.onlineCounter++;
@@ -167,6 +167,9 @@ void readCredentials(char* username, char* password){
 // imposta anche il timestamp di logout uguale al timestamp corrente
 // la funzione viene chiamata quando una recv restituisce 0
 void clientDisconnection(int sock){
+    close(sock); // chiudo socket
+    FD_CLR(sock, &master);
+
     time_t rawtime;
     
     // cerco nella lista degli utenti il client con quel socket
@@ -188,9 +191,7 @@ void clientDisconnection(int sock){
     temp->logout = time(&rawtime); // imposto timestamp logout
     userRegister.onlineCounter--;
     
-    perror("Discussione client \n");
-    close(sock); // chiudo socket
-    FD_CLR(sock, &master);
+    perror("Disconnessione client \n");
     printf("CLIENT DISCONNESSO %s %s", temp->username, ctime(&temp->logout));
 }
 
@@ -220,7 +221,7 @@ void restoreLogin(){
         current_username = (char *) malloc(i + 1);
         strncpy(current_username, line, i);
         current_username[i] = '\0';
-        insertLoggedUser(current_username);
+        //insertLoggedUser(current_username, port);
         i = 0;
     }
     // se non l'ha trovato, invia "NO" e il client rileva che il login ha fallito
