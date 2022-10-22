@@ -85,9 +85,9 @@ bool searchUser(char* user_psw){
     }
 
     while ((read = getline(&line, &len, file_user)) != -1) {
-        printf("Retrieved line of length %zu:\n", read);
+        //printf("Retrieved line of length %zu:\n", read);
         line[read - 1] = '\0';
-        printf("%s\n", line);
+        //printf("%s\n", line);
 
         if(strcmp(line, user_psw) == 0){ 
             found = true;
@@ -101,7 +101,7 @@ bool searchUser(char* user_psw){
             break;
         }
     }
-    printf("Dopo la lettura\n");
+    //printf("Dopo la lettura\n");
     // se non l'ha trovato, invia "NO" e il client rileva che il login ha fallito
     if(found == false){
         /*ret = send(i, "NO\0", 6, 0);

@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "./vector.h"
+
 #define BUFFER_SIZE 1024
 #define RESPONSE_LEN 9 // HH:MM:SS\0
 
@@ -24,6 +26,8 @@ fd_set master;
 fd_set read_fds;
 int fdmax, i, listener_sock;
 
+vector socket_group;
+
 void chatStateInit();
 void readCredentials(char* credentials);
 void sendCredentials(char* credentials, int command);
@@ -38,6 +42,7 @@ void hanging();
 void show();
 void chat();
 void chatP2P();
+void readSentMessages(char* dest);
 void showOnlineUsers();
 
 bool searchContact(char* user);

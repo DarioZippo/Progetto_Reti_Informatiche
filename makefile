@@ -3,11 +3,14 @@
 all: dev serv
 
 # make rule per il device 
-dev: device.o 
-	gcc -Wall -o dev device.o
+dev: device.o vector.o
+	gcc -Wall -o dev device.o vector.o
 
 device.o: device.c
 	gcc -c -Wall -o device.o device.c
+
+vector.o: device/vector.c 
+	gcc -Wall -c -g device/vector.c
 
 # make rule per il server 
 serv: server.o serverCommands.o deviceCommands.o util.o vector.o messaggio.o record.o

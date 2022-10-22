@@ -9,6 +9,7 @@
 
 #include "./device/device.h"
 #include "./device/chat_state.h"
+#include "./device/vector.h"
 
 typedef int bool;
 #define true 1
@@ -147,7 +148,7 @@ void peerDisconnection(int sock){
     // se ero connesso stavo avendo una chat o una chat di gruppo con lui
     // dato che finisce la chat aggiorno variabili di chat e chat di gruppo
     chatState.chat_on = false;
-    //chat_gruppo_attiva = 0;
+    chatState.group_chat_on = false;
     close(sock); // chiudo il socket
     FD_CLR(sock, &master); // lo elimino dai socket che controllo con select
     if(sock == sd){
@@ -176,9 +177,9 @@ bool searchContact(char* user){
     }
 
     while ((read = getline(&line, &len, file_contacts)) != -1) {
-        printf("Retrieved line of length %zu:\n", read);
+        //printf("Retrieved line of length %zu:\n", read);
         line[read - 1] = '\0';
-        printf("%s\n", line);
+        //printf("%s\n", line);
 
         if(strncmp(line, user, strlen(line)) == 0){ 
             found = true;
@@ -215,10 +216,8 @@ void chat(){
         return;
     }
 
-    printf("Trovato! Ora manda il messaggio:\n");
+    printf("Trovato!\n");
     char message[1024];
-    fgets(message, 1024, stdin);
-    int len_message = strlen(message);
 
     // 1)invio il comando al server
     // 2)invio username destinatario
@@ -272,15 +271,17 @@ void chat(){
     // sono dentro la chat, invio messaggi finchè l'utente non digita \q
     if(send_port == server_port){
         // caso in cui l'altro utente è offline e mando messaggi a server
-        while(1){
-            char path[1050];
-            FILE* chat_file;
+        char path[1050];
+        FILE* chat_file;
 
-            strcpy(path, "./device/chat_");
-            strcat(path, username);
-            strcat(path, "/");
-            strcat(path, dest);
-            strcat(path, ".txt");
+        strcpy(path, "./device/chat_");
+        strcat(path, username);
+        strcat(path, "/");
+        strcat(path, dest);
+        strcat(path, ".txt");
+        while(1){
+            fgets(message, 1024, stdin);
+
             chat_file = fopen(path, "a");
 
             if(strcmp(message, "\\q\n") == 0){
@@ -292,9 +293,6 @@ void chat(){
             fclose(chat_file);
 
             sendMessageToServer(username, dest, message); // funzione per inviare messaggio a server
-            
-            fgets(message, 1024, stdin); // prendo messaggio da stdin
-            //Il primo messaggio è stato inviato PRIMA del while!
         }
     }
     
@@ -335,9 +333,9 @@ void chat(){
         if(new_sd > fdmax)
             fdmax = new_sd;
 
-        //leggi_cronologia_messaggi(username);
+        readSentMessages(dest);
 
-        //fgets(message, 1024, stdin); // prendo messaggio da stdin
+        fgets(message, 1024, stdin); // prendo messaggio da stdin
         // funzione che manda un messaggio all'altro peer
         // ha come argomento il socker per la comunicazione
         chatP2P(new_sd, message);
@@ -346,61 +344,106 @@ void chat(){
 
 // funzione per fare chat P2P
 void chatP2P(int new_sd, char message[1024]){
-    while(1){
-        char path[1050];
-        FILE* chat_file;
+    char path[1050];
+    FILE* chat_file;
 
-        strcpy(path, "./device/chat_");
-        strcat(path, username);
-        strcat(path, "/");
-        strcat(path, chatState.last_chat_peer);
-        strcat(path, ".txt");
-        chat_file = fopen(path, "a");
+    strcpy(path, "./device/chat_");
+    strcat(path, username);
+    strcat(path, "/");
+    strcat(path, chatState.last_chat_peer);
+    strcat(path, ".txt");
+    chat_file = fopen(path, "a");
 
-        // esco dalla chat
-        if(strcmp(message, "\\q\n") == 0){
-            ret = send(new_sd, "FINE\0", 1024, 0);
-            if(ret < 0){
-                printf("Errore in fase di invio\n");
-                return;
-            }
-            close(new_sd);
-            FD_CLR(new_sd, &master);
-            chatState.chat_on = false;
-            printf("USCITO dalla chat\n");
-            return;
-        }
-        // ricevo e visualizzo utenti online
-        if(strcmp(message, "\\u\n") == 0){
-            showOnlineUsers();
-            return;
-        }
-        // aggiungo componente al gruppo
-        if(strncmp(message, "\\a ", 3) == 0){
-            //aggiungi_a_gruppo(nuovo_sd);
-            return;
-        }
-        // condivido file
-        if(strncmp(message, "share ", 6) == 0){
-            //share(sock_ultima_chat);
-            return;
-        }
-
-        // invio mittente e poi messaggio
-        ret = send(new_sd, (void*)username, 1024, 0);
+    // esco dalla chat
+    if(strcmp(message, "\\q\n") == 0){
+        ret = send(new_sd, "FINE\0", 1024, 0);
         if(ret < 0){
             printf("Errore in fase di invio\n");
             return;
         }
-        ret = send(new_sd, (void*)message, 1024, 0);
-        if(ret < 0){
-            printf("Errore in fase di invio\n");
-            return;
-        }
-            
-        fgets(message, 1024, stdin); // prendo messaggio da stdin
-        //Il primo messaggio è stato inviato PRIMA del while!
+        close(new_sd);
+        FD_CLR(new_sd, &master);
+        chatState.chat_on = false;
+        printf("USCITO dalla chat\n");
+        return;
     }
+    // ricevo e visualizzo utenti online
+    if(strcmp(message, "\\u\n") == 0){
+        showOnlineUsers();
+        return;
+    }
+    // aggiungo componente al gruppo
+    if(strncmp(message, "\\a ", 3) == 0){
+        //aggiungi_a_gruppo(nuovo_sd);
+        return;
+    }
+    // condivido file
+    if(strncmp(message, "share ", 6) == 0){
+        //share(sock_ultima_chat);
+        return;
+    }
+
+    // salvo messaggio nel file della rispettiva chat
+    // salvo messaggio e poi 1 che indica che è stato ricevuto
+    fprintf(chat_file, "1\n%s", message);
+    fclose(chat_file);
+
+    // invio mittente e poi messaggio
+    ret = send(new_sd, (void*)username, 1024, 0);
+    if(ret < 0){
+        printf("Errore in fase di invio\n");
+        return;
+    }
+    ret = send(new_sd, (void*)message, 1024, 0);
+    if(ret < 0){
+        printf("Errore in fase di invio\n");
+        return;
+    }
+}
+
+void readSentMessages(char* dest){
+    FILE* chat_file;
+    char *line, *current_contact;
+    char path[150];
+    int read;
+    bool receive_check = true;
+
+    printf("CRONOLOGIA MESSAGGI\n\n");
+    // file contenente cronologia dei messaggi con username si chiama cronologia_messaggi_username.txt
+    strcpy(path, "./device/chat_");
+    strcat(path, username);
+    strcat(path, "/");
+    strcat(path, dest);
+    strcat(path, ".txt");
+    // apro in lettura, se il file non esiste significa che non è stato ancora creato
+    // perciò non ci sono messaggi precedenti da visualizzare
+    chat_file = fopen(path, "r");
+    if(chat_file == NULL){
+        printf("Nessun messaggio\n\n");
+        return;
+    }
+
+    while ((read = getline(&line, &len, chat_file)) != -1) {
+        //printf("Retrieved line of length %zu:\n", read);
+        line[read - 1] = '\0';
+        //printf("%s\n", line);
+
+        if(receive_check == false)
+            printf("%s\n", line);
+        
+        if(receive_check == true){
+            // 1 --> messaggio ricevuto, stampo **
+            // 0 --> messaggio non ricevuto, stampo *
+            if(strcmp(line, "1") == 0)
+                printf("** ");
+            if(strcmp(line, "0") == 0)
+                printf("* ");
+        }
+        receive_check = (receive_check + 1) % 2;
+    }
+
+    fclose(chat_file);
+    printf("\n");
 }
 
 void showOnlineUsers(){
@@ -627,7 +670,7 @@ void execUserCommand(char command){
 int main(int argc, char** argv){
     uint16_t port_16_bit;
     int choice;
-    char command;
+    char command, message[1024];
 
     // se il server è in ascolto su una porta diversa da 4242 deve essere passata come secondo argomento
     if(argc > 2)
@@ -647,6 +690,7 @@ int main(int argc, char** argv){
     char buffer[BUFFER_SIZE];
 
     chatStateInit();
+    vector_init(&socket_group);
 
     /* Creazione socket */
     sd = socket(AF_INET,SOCK_STREAM,0);
@@ -742,10 +786,8 @@ int main(int argc, char** argv){
                     // quando c'è una chat in corso non si possono digitare altri comandi
                     // se c'è una chat di gruppo in corso i messaggi vengono inviati al gruppo
                     if(chatState.chat_on == true){
-                        /*
-                        fgets(command, 1024, stdin);
-                        chatP2P(chatState.last_chat_sock);
-                        */
+                        fgets(message, 1024, stdin);
+                        chatP2P(chatState.last_chat_sock, message);
                     }
                     else{
                         command = getc(stdin);
@@ -759,7 +801,7 @@ int main(int argc, char** argv){
                 // la connessione perciò è già stata effettuata precedentemente
                 else if(i != listener_sock && i != 0){
                     // mittente e messaggio possono essere al più 1024 caratteri
-                    char sender[1024], message[1024];
+                    char sender[1024];
 
                     ret = recv(i, (void*)sender, 1024, 0); // ricevo il mittente del messaggio e lo salvo in mittente
                     if(ret < 0){
@@ -776,8 +818,8 @@ int main(int argc, char** argv){
                         printf("FINE CHAT\n");
                         close(i); // chiudo socket
                         FD_CLR(i, &master); // lo tolgo dall'insieme dei file descriptor da controllare
-                        //chat_attiva = 0; // smetto di chattare
-                        //chat_gruppo_attiva = 0; // smetto di chattare con gruppo
+                        chatState.chat_on = false; // smetto di chattare
+                        chatState.group_chat_on = false; // smetto di chattare con gruppo
                         continue;
                     }
                     
@@ -795,12 +837,17 @@ int main(int argc, char** argv){
                     */
 
                     // se non sono entrato negli if precedenti significa che ho ricevuto un messaggio
-                    // Controlli sul tipo di messaggi ricevuti da implementare
+                    if(chatState.group_chat_on == true)
+                        printf("Messaggio di gruppo ricevuto\n");
+                    if(chatState.group_chat_on == false && (chatState.chat_on == 0 || strcmp(chatState.last_chat_peer, sender) != 0)){
+                        printf("Messaggio di %s ricevuto\nINIZIO CHAT con %s\n", sender, sender);
+                    }
 
                     // aggiorno variabili per gestione chat
-                    strcpy(chatState.last_chat_peer, sender);
+                    strncpy(chatState.last_chat_peer, sender, strlen(sender));
                     chatState.last_chat_sock = i;
-                    //chat_attiva = 1;
+                    chatState.chat_on = true;
+
                     // ricevo mittente
                     ret = recv(i, (void*)message, 1024, 0);
                     if(ret < 0){
@@ -812,7 +859,7 @@ int main(int argc, char** argv){
                         peerDisconnection(i);
                         continue;
                     }
-
+                    
                     printf("%s: %s", sender, message);
                 }
             }
