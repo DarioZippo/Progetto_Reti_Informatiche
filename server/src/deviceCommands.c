@@ -354,7 +354,7 @@ void chat(){
     }
     username[len - 1] = '\0';
 
-    //printf("%s con len: %d, %d\n", username, strlen(username), len);
+    printf("%s con len: %d, %d\n", username, strlen(username), len);
 
     struct Record* temp;
     for(int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){

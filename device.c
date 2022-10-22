@@ -374,7 +374,7 @@ void chatP2P(int new_sd, char message[1024]){
     }
     // aggiungo componente al gruppo
     if(strncmp(message, "\\a ", 3) == 0){
-        //aggiungi_a_gruppo(nuovo_sd);
+        addGroupMember(new_sd, message);
         return;
     }
     // condivido file
@@ -398,6 +398,203 @@ void chatP2P(int new_sd, char message[1024]){
     if(ret < 0){
         printf("Errore in fase di invio\n");
         return;
+    }
+}
+
+// funzione per mandare messaggio a tutti i componenti del gruppo
+void groupChat(int new_sd, char* message){
+    int index;
+    
+    // se una persona esce dal gruppo allora tutti i componenti escono dal gruppo
+    // l'utente esce inoltre da tutte le chat
+    if(strcmp(message, "\\q\n") == 0){
+        for(index = 0; index < chatState.members_number; index++){
+            ret = send(chatState.socket_group[index], "FINE", 1024, 0);
+            if(ret < 0){
+                printf("Errore in fase di invio\n");
+                return;
+            }
+            close(chatState.socket_group[index]);
+            FD_CLR(chatState.socket_group[index], &master);
+            chatState.chat_on = false;
+            chatState.group_chat_on = false;
+        }
+        printf("USCITO dal gruppo e da tutte le chat\n");
+        return;
+    }
+    if(strcmp(message, "\\u\n") == 0){
+        showOnlineUsers();
+        return;
+    }
+    if(strncmp(message, "\\a ", 3) == 0){
+        addGroupMember(0, message); // parametro del socket non serve, serve solamente in fase di creazione del gruppo
+        return;
+    }
+    /*
+    if(strncmp(message, "share ", 6) == 0){
+        // Faccio share con tutti i componenti
+        for(index = 0; index < num_componenti; index++){
+            share(socket_componenti[index]); 
+        }
+        return;
+    }
+    */
+    // invio mittente e poi messaggio a tutti componenti
+    for(index = 0; index < chatState.members_number; index++){
+        ret = send(chatState.socket_group[index], (void*)username, 1024, 0);
+        if(ret < 0){
+            printf("Errore in fase di invio\n");
+            return;
+        }
+        ret = send(chatState.socket_group[index], (void*)message, 1024, 0);
+        if(ret < 0){
+            printf("Errore in fase di invio\n");
+            return;
+        }
+    }
+}
+
+void addGroupMember(int new_sd, char* message){
+    char dest[1024];
+    int dest_len, divider = -1, send_port, p, new_member;
+    uint16_t pp;
+    struct sockaddr_in peer;
+
+    printf("PROVO AD AGGIUNGERE A GRUPPO\n");
+    // cerco lo spazio che fa da separatore tra comando e username destinatario
+    for(int i = 0; i < strlen(message); i++){
+        if(message[i] == ' '){
+            divider = i;
+            break;
+        }
+    }
+
+    // copio username destinatario nella variabile username
+    dest_len = strlen(message) - divider - 1;
+    strncpy(dest, &(message[divider+1]), dest_len);
+    dest[dest_len - 1] ='\0';
+    printf("Voglio aggiungere %s\ncon divider: %d\ndest_len: %d\n", dest, divider, dest_len);
+    // invio comando e poi username destinatario
+
+    // invio comando chat perchè il server non fa altro che dirmi se l'altro
+    // peer è online oppure no ed eventualmente darmi la porta dove è connesso
+
+    uint16_t s_command = htons(5);
+    int ret = send(sd, (void*) &s_command, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di invio comando: \n");
+        exit(1);
+    }
+
+    lmsg = htons(dest_len);
+    ret = send(sd, (void*) &lmsg, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di invio comando: \n");
+        exit(1);
+    }
+    ret = send(sd, dest, dest_len, 0);
+    if(ret < 0){
+        perror("Errore in fase di invio comando: \n");
+        exit(1);
+    }
+
+    // ricevo la porta su cui è connesso il nuovo componente
+    // la porta vale 0 in caso in cui il componente sia offline
+    ret = recv(sd, (void*)&pp, sizeof(uint16_t), 0);
+    if(ret < 0){
+        printf("Errore nella ricezione\n");
+        return;
+    }
+    // Gestione disconnessione server
+    if(ret == 0){
+        printf("DISCONNESSIONE SERVER\n");
+        exit(1);
+    }
+
+    // se il destinatario è ONLINE ricevo la sua porta, qualora valesse -1 significa che è OFFLINE 
+    p = ntohs(pp);
+    username[strlen(username)-1] = '\0';
+    if(p == 0){
+        printf("%s è OFFLINE\nIMPOSSIBILE AGGIUNGERE %s al GRUPPO\n", dest, dest);
+        send_port = server_port;
+        return;
+    }
+    else{
+        printf("%s è ONLINE\nAGGIUNGO %s al GRUPPO\n", dest, dest);
+        send_port = p;
+    }
+
+    // in peer salvo le info relative al nuovo membro
+    memset(&peer, 0, sizeof(peer));
+    peer.sin_family = AF_INET;
+    peer.sin_port = htons(p);
+    inet_pton(AF_INET, "127.0.0.1", &peer.sin_addr);
+
+    // new_member --> socket per la comunicazione con il nuovo componente
+    new_member = socket(AF_INET, SOCK_STREAM, 0);
+    if(new_member == -1){
+        printf("ERRORE CREAZIONE SOCKET\n");
+        exit(1);
+    }
+
+    // connessione con il nuovo componente
+    ret = connect(new_member, (struct sockaddr*)&peer, sizeof(peer));
+    if(ret < 0){
+        perror("Errore nella connessione con peer\n");
+        exit(1);
+    }
+
+    // Invio prima di tutto il codice al nuovo componente perchè deve fare delle operazioni prima degli altri
+    ret = send(new_member, "GRUPPO\0", 1024, 0);
+    if(ret < 0){
+        perror("Errore nell'invio\n");
+        exit(1);
+    }    
+
+    // al nuovo componente invio 0 per distinguerlo dagli altri, deve gestire diversamente rispetto agli altri
+    pp = htons(0);
+    ret = send(new_member, (void*)&pp, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore nell'invio\n");
+        exit(1);
+    }
+
+    // sleep aggiunta per dare tempo al nuovo componente di aggiornare le variabili e mettersi in ascolto nuovamente
+    // senza sleep gli altri componenti potrebbero fare connessioni prima che le variabili siano aggiornate
+    sleep(2);
+
+    if(chatState.group_chat_on == false){ // gruppo nuovo, inizializzo variabili per gestione gruppo
+        chatState.socket_group[0] = new_sd;
+        chatState.members_number = 1;
+    }
+
+    // in socket componenti ho tutti i socket per la comunicazione con i componenti del gruppo
+    chatState.socket_group[chatState.members_number] = new_sd;
+    chatState.members_number++;
+    chatState.group_chat_on = true;
+    
+    FD_SET(new_member, &master);
+    if(new_member > fdmax)
+        fdmax = new_member;
+
+    // invio codice GRUPPO a tutti i componenti del gruppo, eccetto quello appena aggiunto
+    for(int i = 0; i < chatState.members_number - 1; i++){
+        ret = send(chatState.socket_group[i], "GRUPPO\0", 1024, 0);
+        if(ret < 0){
+            perror("Errore nell'invio\n");
+            exit(1);
+        }
+    }
+
+    // invio la porta del nuovo componente a tutti i componenti del gruppo (eccetto quello appena aggiunto)
+    // in modo che i componenti possano fare la connessione col componente appena aggiunto
+    pp = htons(send_port);
+    for(int i = 0; i < chatState.members_number - 1; i++){
+        ret = send(chatState.socket_group[i], (void*)&pp, sizeof(uint16_t), 0);
+        if(ret < 0){
+            perror("Errore nell'invio\n");
+            exit(1);
+        }
     }
 }
 
@@ -669,7 +866,7 @@ void execUserCommand(char command){
 
 int main(int argc, char** argv){
     uint16_t port_16_bit;
-    int choice;
+    int choice, i;
     char command, message[1024];
 
     // se il server è in ascolto su una porta diversa da 4242 deve essere passata come secondo argomento
@@ -690,7 +887,6 @@ int main(int argc, char** argv){
     char buffer[BUFFER_SIZE];
 
     chatStateInit();
-    vector_init(&socket_group);
 
     /* Creazione socket */
     sd = socket(AF_INET,SOCK_STREAM,0);
@@ -776,16 +972,18 @@ int main(int argc, char** argv){
                     FD_SET(new_sd, &master); 
                     if(new_sd > fdmax)
                         fdmax = new_sd;
-                    /*
-                    if(chat_gruppo_attiva == 1)
-                        socket_componenti[num_componenti++] = new_sd;
-                    */
+                    if(chatState.group_chat_on == true)
+                        chatState.socket_group[chatState.members_number++] = new_sd;
                 }
                 // se i == 0, stdin è pronto in lettura, l'utente ha digitato un comando oppure inviato un messaggio
                 else if(i == 0){
                     // quando c'è una chat in corso non si possono digitare altri comandi
                     // se c'è una chat di gruppo in corso i messaggi vengono inviati al gruppo
-                    if(chatState.chat_on == true){
+                    if(chatState.group_chat_on == true){
+                        fgets(message, 1024, stdin);
+                        groupChat(chatState.last_chat_sock, message);
+                    }
+                    else if(chatState.chat_on == true){
                         fgets(message, 1024, stdin);
                         chatP2P(chatState.last_chat_sock, message);
                     }

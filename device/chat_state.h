@@ -19,6 +19,7 @@ struct ChatState{
     // ci può essere un solo gruppo alla volta, quando un peer esce dal gruppo, tutti i peer escono dal gruppo
     int last_port_chat_peer;
     bool group_chat_on;
+    int members_number, socket_group[10];
     //int porte_componenti_gruppo[10]; // max componenti gruppo: 10
     //int socket_componenti[10]; // socket per comunicazione con ogni componente del gruppo
 };

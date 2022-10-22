@@ -24,9 +24,7 @@ int username_len;
 bool logged = false;
 fd_set master; 
 fd_set read_fds;
-int fdmax, i, listener_sock;
-
-vector socket_group;
+int fdmax, listener_sock;
 
 void chatStateInit();
 void readCredentials(char* credentials);
@@ -41,7 +39,9 @@ void execDeviceCommand(char command);
 void hanging();
 void show();
 void chat();
-void chatP2P();
+void chatP2P(int new_sd, char* message);
+void groupChat();
+void addGroupMember(int new_sd, char* message);
 void readSentMessages(char* dest);
 void showOnlineUsers();
 
