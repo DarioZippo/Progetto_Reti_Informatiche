@@ -185,8 +185,10 @@ void clientDisconnection(int sock){
             break;
         }
     }
-    if(found == false)
+    if(found == false){
+        printf("Non ho trovato l'utente associato\n");
         return;
+    }
 
     temp->logout = time(&rawtime); // imposto timestamp logout
     userRegister.onlineCounter--;

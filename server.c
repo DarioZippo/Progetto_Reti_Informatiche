@@ -127,9 +127,7 @@ int main(int argc, char** argv){
                     }
                 } 
                 if(current_s == 0){
-                    c_choice = getc(stdin);
-                    getc(stdin); //bug
-                    choice = c_choice - '0';
+                    scanf("%d", &choice);
                     //printf("Comando server: %d %c\n", choice, c_choice);
                     execServerCommand(choice);
                 }

@@ -27,11 +27,16 @@ void help(){
 void showRegister(){
     struct Record* temp;
     printf("Utenti connessi: ");
-    for (int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
-        if(i != 0)
-            printf("->");
+    bool first = true;
+    for(int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
         temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
-        printf(" %s ", temp->username);
+        if(temp->logout == (time_t) NULL){ // timestamp_logout == NULL significa che è online
+            if(first == false){
+                printf(" -> ");
+            }
+            printf(" %s*%s*%d ", temp->username, temp->logout, temp->port);
+            first = false;
+        }
     }
     printf("\n");
 }

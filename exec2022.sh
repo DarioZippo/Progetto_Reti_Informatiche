@@ -19,7 +19,10 @@
 # chiamarsi 'serv' e 'dev', e devono essere nella current folder
 
 # 2.1 esecuzioe del server sulla porta 4242
-  gnome-terminal -x sh
+  gnome-terminal -x sh -c "./serv 4242; exec bash"
 
 # 2.2 esecuzione di 3 device sulle porte {5001,...,5003}
-gnome-terminal -x sh
+  for port in {5001..5003}
+  do
+     gnome-terminal -x sh -c "./dev $port; exec bash"
+  done

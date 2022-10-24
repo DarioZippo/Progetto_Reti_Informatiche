@@ -513,7 +513,7 @@ void addGroupMember(int new_sd, char* message){
 
     // se il destinatario è ONLINE ricevo la sua porta, qualora valesse -1 significa che è OFFLINE 
     p = ntohs(pp);
-    username[strlen(username)-1] = '\0';
+    dest[strlen(dest)-1] = '\0';
     if(p == 0){
         printf("%s è OFFLINE\nIMPOSSIBILE AGGIUNGERE %s al GRUPPO\n", dest, dest);
         send_port = server_port;
@@ -569,7 +569,7 @@ void addGroupMember(int new_sd, char* message){
     }
 
     // in socket componenti ho tutti i socket per la comunicazione con i componenti del gruppo
-    chatState.socket_group[chatState.members_number] = new_sd;
+    chatState.socket_group[chatState.members_number] = new_member;
     chatState.members_number++;
     chatState.group_chat_on = true;
     
@@ -596,6 +596,75 @@ void addGroupMember(int new_sd, char* message){
             exit(1);
         }
     }
+}
+
+void groupUpdate(int current_s){
+    uint16_t p_comp;
+    int member_port, new_connection;
+    struct sockaddr_in new_member;
+
+    // riceve la porta del nuovo componente
+    // in caso di creazione del gruppo, i 2 componenti non creatori ricevono la porta dell'altro peer
+    ret = recv(current_s, (void*)&p_comp, sizeof(uint16_t), 0);
+    if(ret < 0){
+        perror("Errore in fase di ricezione: \n");
+        exit(1);
+    }
+    // Gestione disconnessione improvvisa peer
+    if(ret == 0){
+        peerDisconnection(current_s);
+        return;
+    }
+    member_port = ntohs(p_comp);
+    // il peer che viene aggiunto riceve 0 per poterlo distinguere da i peer già nel gruppo
+    // deve essere gestito diversamente
+    if(member_port == 0){
+        printf("SONO STATO AGGIUNTO A UN GRUPPO\nINIZIO CHAT CON GRUPPO\n");
+        // socket i mi ha aggiunto al gruppo, lo salvo tra i socket dei componenti del gruppo
+        chatState.socket_group[0] = current_s; 
+        // inizializzo variabili per gestione gruppo
+        chatState.members_number = 1; 
+        chatState.group_chat_on = true;
+        return; // questo peer non deve eseguire il codice sottostante
+    }
+
+    // codice che viene eseguito dai peer che non sono stati aggiunti con \a username
+
+    // se chat_gruppo_attiva == 0, viene creato un nuovo gruppo, quindi inizializzo le variabili
+    if(chatState.group_chat_on == false){
+        printf("NUOVO GRUPPO CREATO\nINIZIO CHAT CON GRUPPO\n");
+        chatState.group_chat_on = true;
+        chatState.socket_group[0] = current_s;
+        chatState.members_number = 1;
+    }
+    // un componente è stato aggiunto al gruppo
+    // devo perciò stabilire una connessione con il peer appena aggiunto
+    // conosco la porta del peer che è stato aggiunto, mi è stata appena inviata
+    printf("NUOVO COMPONENTE AGGIUNTO AL GRUPPO\n");
+    new_connection = socket(AF_INET, SOCK_STREAM, 0); // socket comunicazione con nuovo componente
+    if(new_connection == -1){
+        printf("Errore creazione socket\n");
+        exit(1);
+    }
+
+    // new_member contiene info sul nuovo componente del gruppo 
+    memset(&new_member, 0, sizeof(new_member));
+    new_member.sin_family = AF_INET;
+    new_member.sin_port = htons(member_port);
+    inet_pton(AF_INET, "127.0.0.1", &new_member.sin_addr);
+
+    // Faccio connessione con nuovo componente
+    ret = connect(new_connection, (struct sockaddr*)&new_member, sizeof(new_member));
+    if(ret < 0){
+        perror("Errore nella connessione con il nuovo componente\n");
+        exit(1);
+    }
+    printf("CONNESSO CON NUOVO COMPONENTE\n");
+    // inserisco il socket tra quelli dei componenti del gruppo
+    chatState.socket_group[chatState.members_number++] = new_connection;
+    FD_SET(new_connection, &master); // aggiunto socket a master
+    if(new_connection > fdmax) // aggiorno fdmax
+        fdmax = new_connection;
 }
 
 void readSentMessages(char* dest){
@@ -977,19 +1046,18 @@ int main(int argc, char** argv){
                 }
                 // se i == 0, stdin è pronto in lettura, l'utente ha digitato un comando oppure inviato un messaggio
                 else if(i == 0){
+                    fgets(message, 1024, stdin);
                     // quando c'è una chat in corso non si possono digitare altri comandi
                     // se c'è una chat di gruppo in corso i messaggi vengono inviati al gruppo
                     if(chatState.group_chat_on == true){
-                        fgets(message, 1024, stdin);
                         groupChat(chatState.last_chat_sock, message);
                     }
                     else if(chatState.chat_on == true){
-                        fgets(message, 1024, stdin);
                         chatP2P(chatState.last_chat_sock, message);
                     }
                     else{
-                        command = getc(stdin);
-                        getc(stdin); //bug
+                        command = message[0];
+                        fflush(stdin);
                         printf("choice: %c\n", command);
                         execUserCommand(command);
                     }
@@ -1023,8 +1091,10 @@ int main(int argc, char** argv){
                     
                     // se invece di un mittente ho ricevuto GRUPPO è il segnale viene creato un gruppo
                     // oppure è stato aggiunto un nuovo componente al gruppo
-                    //if(strcmp(mittente, "GRUPPO") == 0){
-                    
+                    if(strcmp(sender, "GRUPPO") == 0){
+                        groupUpdate(i);
+                        continue;
+                    }
                     // se invece di un mittente ho ricevuto SHARE è il segnale che mi stanno inviando un file
                     /*
                     if(strcmp(mittente, "SHARE") == 0){
