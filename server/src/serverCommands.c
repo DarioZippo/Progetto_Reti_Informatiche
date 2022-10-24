@@ -39,6 +39,8 @@ void showRegister(){
         }
     }
     printf("\n");
+    
+    showUsersLinks();
 }
 
 // comando esc

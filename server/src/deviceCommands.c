@@ -117,6 +117,7 @@ void in(){
     }
     else if(found == true){
         insertLoggedUser(username, port);
+        sendNotification(username);
     }
 }
 

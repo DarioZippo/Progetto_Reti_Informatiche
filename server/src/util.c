@@ -71,6 +71,43 @@ void writeLoginOnFile(char* username, char* record, int len, int porta, time_t r
     fclose(file_login);
 }
 
+// Invio notifica UDP per l'aggiornamento della cronologia messaggi
+void sendNotification(char* username){
+    struct UsersLink* temp_ul;
+
+    // mando la notifica al client che ha appena fatto l'accesso
+    ret = send(current_s, "NOTIFICA\0", 1024, 0);
+    if(ret < 0){
+        perror("Errore in fase di ricezione: \n");
+        return;
+    }
+    if(ret == 0){
+        clientDisconnection(current_s);
+        return;
+    }
+
+    // Tecnica dei due puntatori
+    for(int i = 0; i < usersLink.pfVectorTotal(&usersLink); i++){
+        temp_ul = (struct UsersLink*)usersLink.pfVectorGet(&usersLink, i);
+        if(strcmp(temp_ul->sender, username) == 0){
+            ret = send(current_s, temp_ul->dest, 1024, 0);
+            if(ret < 0){
+                printf("Errore invio\n");
+                return;
+            }
+            usersLink.pfVectorDelete(&usersLink, i);
+            i--;
+        }
+    }
+
+    // invio 0 quando non ci sono più username da inviare
+    ret = send(current_s, "\0", 1024, 0);
+    if(ret < 0){
+        printf("Errore invio\n");
+        return;
+    }
+}
+
 // trova utente, utilizzata in fase di login per cercare utente registrato nel file user.txt
 bool searchUser(char* user_psw){
     FILE* file_user;
@@ -424,4 +461,16 @@ void showMessages(vector *v){
         temp_m = (struct Message*)v->pfVectorGet(v, i);
         printf("m: %s", temp_m->mess);
     }
+}
+
+void showUsersLinks(){
+    struct UsersLink* temp_ul;
+    printf("Lista UsersLink: ");
+    for(int i = 0; i < usersLink.pfVectorTotal(&usersLink); i++){
+        if(i != 0)
+            printf(" -> ");
+        temp_ul = (struct UsersLink*)usersLink.pfVectorGet(&usersLink, i);
+        printf("s: %s, d: %s\n", temp_ul->sender ,temp_ul->dest);
+    }
+    printf("\n");
 }

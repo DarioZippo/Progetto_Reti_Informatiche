@@ -261,7 +261,7 @@ void chat(){
     if(p == 0){
         printf("%s è OFFLINE\nPuoi inviare comunque e %s li ricevera' quando tornera' online\n", dest, dest);
         send_port = server_port; // se è offline mando i messaggi al server
-        //invia_dati_a_server(mio_username, username);
+        //invia_dati_a_server(username, username);
     }
     else{
         printf("%s è ONLINE\nINIZIO CHAT con %s\n", dest, dest);
@@ -675,7 +675,7 @@ void readSentMessages(char* dest){
     bool receive_check = true;
 
     printf("CRONOLOGIA MESSAGGI\n\n");
-    // file contenente cronologia dei messaggi con username si chiama cronologia_messaggi_username.txt
+    // file contenente cronologia dei messaggi con dest
     strcpy(path, "./device/chat_");
     strcat(path, username);
     strcat(path, "/");
@@ -710,6 +710,95 @@ void readSentMessages(char* dest){
 
     fclose(chat_file);
     printf("\n");
+}
+
+// funzione per aggiornare il file della cronologia dei messaggi
+// i messaggi che non erano stati ricevuti dopo che è stata eseguita la show sono stati ricevuti
+void updateSentMessages(char* dest){
+    FILE* chat_file;
+    char *line, *current_contact;
+    char path[150];
+    int read;
+    bool not_received;
+    int first_line = 0, lines_number = 0, j;
+
+    // file contenente cronologia dei messaggi con dest
+    strcpy(path, "./device/chat_");
+    strcat(path, username);
+    strcat(path, "/");
+    strcat(path, dest);
+    strcat(path, ".txt");
+    
+    chat_file = fopen(path, "r");
+    if(chat_file == NULL){
+        printf("Nessun messaggio\n\n");
+        return;
+    }
+    chat_file = fopen(path, "r");
+    if(chat_file == NULL){
+        printf("Nessun messaggio\n\n");
+        return;
+    }
+
+    // non posso scrivere subito il file dato, quando trovo il giusto punto per scrivere è già troppo tardi
+    // dato che l'accesso ai file in UNIX è sequenziale, quando ho letto la riga che avrei dovuto modificare
+    // se provassi a scrivere scriverei nella riga successiva
+    while ((read = getline(&line, &len, chat_file)) != -1) {
+        //printf("Retrieved line of length %zu:\n", read);
+        line[read - 1] = '\0';
+        //printf("%s\n", line);
+        lines_number++; // conto il numero di righe, lo utlizzo successivamente
+        printf("%s\n", line);
+        // il punto da cui cominicare a scrivere è quando trovo un messaggio non ricevuto (codice 0)
+        if(strcmp(line, "0\n") == 0 && not_received == false){
+            not_received = true; // non_ricevuto serve per evitare di entrare in questo if le volte successive
+            first_line = lines_number - 1; // first_line --> indice della prima riga da modificare
+        }
+    }
+
+    fclose(chat_file);
+
+    // tutti i messaggi ricevuti, non c'è niente da modificare
+    if(not_received == false)
+        return;
+
+    // apro il file sia in lettura che in scrittura, adesso conosco il numero di righe del file
+    // e l'indice della prima riga da modificare
+    // devo modificare solamente le righe contenenti i codici che indicano la ricezione o meno del messaggio
+    chat_file = fopen(path, "r+");
+    for(j = 0; j < lines_number; j++){
+        if(j < first_line) // ancora non devo modificare, perciò leggo solamente
+            getline(&line, &len, chat_file);
+        if(j >= first_line && (j-first_line)%2 == 0) // riga contenente il codice, scrivo 1
+            fprintf(chat_file, "1\n");
+        if(j >= first_line && (j-first_line)%2 != 0) // riga contenente un messaggio, leggo solamente
+            getline(&line, &len, chat_file);
+    }
+
+    fclose(chat_file); // chiudo il file
+}
+
+void receiveChatInfo(){
+    char dest[1024];
+
+    while(1){
+        // il server invia gli username degli utenti che hanno eseguito la show
+        ret = recv(sd, (void*)dest, 1024, 0); // salvo l'username nella variabile dest
+        if(ret < 0){
+            perror("Errore in fase di ricezione: \n");
+            exit(1);
+        }
+        // se recv restituisce 0 che il server si è disconnesso
+        if(ret == 0){
+            printf("SERVER DISCONNESSO\n");
+            exit(1);
+        }
+        // quando ricevo \0 significa che la lista degli utenti che hanno eseguito la show è terminata
+        if(strcmp(dest, "\0") == 0)
+            break;
+        printf("%s\n", dest);
+        updateSentMessages(dest); // aggiorno il file della cronologia dei messaggi
+    }
 }
 
 void showOnlineUsers(){
@@ -981,10 +1070,6 @@ int main(int argc, char** argv){
         deviceAccess();
     }while(logged == false);
 
-    //Continuo
-
-    //ricevi_chi_ha_fatto_show();
-
     // creo socket di ascolto
     // ogni peer ha un socket di ascolto per ricevere messaggi, 
     // ad esempio accettare richieste connessione per chat P2P
@@ -1079,6 +1164,13 @@ int main(int argc, char** argv){
                         peerDisconnection(i); // gestisce disconnessioni improvvise di peer con cui sono connesso
                         continue;
                     }
+                    // se invece di un mittente ho ricevuto NOTIFICA è il segnale per l'aggiornamento delle chat
+                    if(strcmp(sender, "NOTIFICA") == 0){
+                        printf("NOTIFICA\n");
+                        receiveChatInfo();
+                        continue;
+                    }
+
                     // se invece di un mittente ho ricevuto FINE è il segnale che la chat deve essere chiusa
                     if(strcmp(sender, "FINE") == 0){
                         printf("FINE CHAT\n");

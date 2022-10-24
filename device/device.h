@@ -43,10 +43,13 @@ void chatP2P(int new_sd, char* message);
 void groupChat();
 void addGroupMember(int new_sd, char* message);
 void readSentMessages(char* dest);
+void updateSentMessages(char* dest);
 void showOnlineUsers();
 
 bool searchContact(char* user);
 void sendMessageToServer(char* sender, char* dest, char* message);
+
+void execUserCommand(char command);
 
 void peerDisconnection(int sock);
 void out();
