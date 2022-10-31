@@ -19,6 +19,7 @@ struct ChatState chatState;
 
 void chatStateInit(){
     chatState.chat_on = false;
+    chatState.group_chat_on = false;
 }
 
 void sendCredentials(char* credentials, int command){
@@ -379,7 +380,7 @@ void chatP2P(int new_sd, char message[1024]){
     }
     // condivido file
     if(strncmp(message, "share ", 6) == 0){
-        //share(sock_ultima_chat);
+        share(chatState.last_chat_sock, message);
         return;
     }
 
@@ -399,6 +400,136 @@ void chatP2P(int new_sd, char message[1024]){
         printf("Errore in fase di invio\n");
         return;
     }
+}
+
+// LA SHARE PUO' ESSERE CHIAMATA SOLO DURANTE UNA CHAT/CHAT DI GRUPPO
+// funzione per condividere file con altro peer
+// parametro sock è il socket con cui comunicare
+void share(int sock, char* message){
+    char path[1024], buf[10240];
+    int divider = -1;
+    long int size, sended = 0;
+    size_t res;
+    uint16_t len;
+    FILE* fp;
+
+    printf("SHARE\n");
+
+    // invio comando share al peer
+    // len = 1024 perchè l'altro peer si aspetta un mittente (gli username sono max 1024 caratteri)
+    ret = send(sock, "SHARE\0", 1024, 0);
+    if(ret < 0){
+        printf("Errore invio\n");
+        exit(1);
+    }
+
+    for(int i = 0; i < strlen(message); i++){
+        if(message[i] == ' '){
+            divider = i;
+            break;
+        }
+    }
+
+    // estraggo il path dal comando digitato
+    memcpy((void*)path, (void*) message + divider + 1, strlen(message) - 1);
+    path[strlen(path)-1] = '\0';
+    printf("%s\n", path);
+
+    // legge il file binario
+    if ( (fp = fopen(path, "rb")) == NULL){
+        printf("Errore apertura file\n");
+        exit(1);
+    }
+
+    // calcolo della dimensione del file da condividere
+    fseek(fp, 0, SEEK_END);
+    size = ftell(fp);
+    // ripristino del puntatore all'inizio del file
+    fseek(fp, 0, SEEK_SET);
+    
+    // manda il file in partizioni di 10240 bit
+    // salva anche res qualore i bit letti fosseri minori di 10240
+    while( (res = fread(buf, 1, 10240, fp)) > 0){
+        sended+=res;
+        printf("Sended: %d\n", sended);
+        // invia il numero di bit che ha letto
+        len = htons(res);
+        ret = send(sock, &len, sizeof(uint16_t), 0);
+        if(ret < 0){
+            printf("Errore invio\n");
+            exit(1);
+        }
+        // invia i bit
+        ret = send(sock, buf, res, 0);
+        if(ret < 0){
+            printf("Errore invio\n");
+            exit(1);
+        }
+        buf[0] = '\0';
+    }
+    if (sended != size)
+        perror("il file non è stato inviato correttamente: ");
+    
+    // Per segnalare che ho finito di inviare mando 0 come lunghezza del prossimo messaggio
+    len = htons(0);
+    ret = send(sock, &len, sizeof(uint16_t), 0);
+    if(ret < 0){
+        printf("Errore invio\n");
+        exit(1);
+    }
+
+    fclose(fp);
+}
+
+// funzione per ricevre il file mandato con la share
+void receiveSharedFile(int current_s){
+    char buf[10240], path[1050];    
+    uint16_t len;
+    int size;
+    FILE* fp;
+
+    printf("INIZIO SHARE\n");
+
+    // il file ricevuto avrà sempre lo stesso nome
+    // sarà cura dell'utente rinominare il file opportunamente
+    // una seconda share consecutiva causerebbe la sovrascrittura della prima
+    strcpy(path, "./received_file_");
+    strcat(path, username);
+    if ((fp = fopen(path, "wb")) == NULL){
+       printf("Errore apertura file");
+       exit(1);
+   }
+
+    while(1){
+        printf("Pappa\n");
+        ret = recv(current_s, &len, sizeof(uint16_t), 0);
+        if(ret < 0){
+            printf("Errore ricezione\n");
+            exit(1);
+        }  
+        if(ret == 0){
+            peerDisconnection(current_s);
+            return;
+        }
+        size = ntohs(len);
+        printf("chunk size: %d\n", size);
+        if(size == 0){
+            break;
+        }
+        ret = recv(current_s, buf, size, 0);
+        if(ret < 0){
+            printf("Errore ricezione\n");
+            exit(1);
+        }
+        if(ret == 0){
+            peerDisconnection(current_s);
+            return;
+        }
+        fwrite(buf, size, 1, fp); // scrivo il file binario
+    }  
+
+    fclose(fp);   
+    printf("FINE SHARE\n");   
 }
 
 // funzione per mandare messaggio a tutti i componenti del gruppo
@@ -430,15 +561,15 @@ void groupChat(int new_sd, char* message){
         addGroupMember(0, message); // parametro del socket non serve, serve solamente in fase di creazione del gruppo
         return;
     }
-    /*
+    
     if(strncmp(message, "share ", 6) == 0){
         // Faccio share con tutti i componenti
-        for(index = 0; index < num_componenti; index++){
-            share(socket_componenti[index]); 
+        for(index = 0; index < chatState.members_number; index++){
+            share(chatState.socket_group[index], message); 
         }
         return;
     }
-    */
+    
     // invio mittente e poi messaggio a tutti componenti
     for(index = 0; index < chatState.members_number; index++){
         ret = send(chatState.socket_group[index], (void*)username, 1024, 0);
@@ -1188,14 +1319,10 @@ int main(int argc, char** argv){
                         continue;
                     }
                     // se invece di un mittente ho ricevuto SHARE è il segnale che mi stanno inviando un file
-                    /*
-                    if(strcmp(mittente, "SHARE") == 0){
-                        printf("INIZIO SHARE\n");
-                        ricevi_file_share(); // funzione per ricevere file
+                    if(strcmp(sender, "SHARE") == 0){
+                        receiveSharedFile(i); // funzione per ricevere file
                         continue;
                     } 
-                    */
-
                     // se non sono entrato negli if precedenti significa che ho ricevuto un messaggio
                     if(chatState.group_chat_on == true)
                         printf("Messaggio di gruppo ricevuto\n");

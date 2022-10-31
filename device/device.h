@@ -40,6 +40,8 @@ void hanging();
 void show();
 void chat();
 void chatP2P(int new_sd, char* message);
+void share(int sock, char* message);
+void receiveSharedFile();
 void groupChat();
 void addGroupMember(int new_sd, char* message);
 void readSentMessages(char* dest);

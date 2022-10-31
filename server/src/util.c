@@ -115,7 +115,7 @@ bool searchUser(char* user_psw){
     int read;
     bool found = false;
 
-    file_user = fopen("./user.txt", "r");
+    file_user = fopen("./server/documents/user.txt", "r");
     if(file_user == NULL){
         printf("Errore nell'apertura del file\n");
         return false;
@@ -240,7 +240,7 @@ void restoreLogin(){
     int read, i = 0;
     bool found = false;
 
-    file_user = fopen("./user.txt", "r");
+    file_user = fopen("././server/documents/user.txt", "r");
     if(file_user == NULL){
         printf("Errore nell'apertura del file\n");
         return;
@@ -282,7 +282,7 @@ void restoreMessages(){
     FILE* saved_messages;
     char *line;
     int current_type = 0, num_mess, read; 
-    bool primo_mittente = true, primo_non_ric = true, no_read = false;
+    bool first_sender = true, primo_non_ric = true, no_read = false;
     struct StructMessage* temp_sm;
     struct UserMessages* temp_um;
     vector* temp_v;
@@ -331,7 +331,7 @@ void restoreMessages(){
                 line[read - 1] = '\0';
                 strcpy(temp_sm->dest, line);
                 temp_v = &temp_sm->userMessagesList;
-                primo_mittente = true;
+                first_sender = true;
                 break;
             }
             //SENDER

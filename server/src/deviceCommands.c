@@ -75,7 +75,7 @@ void signup(){
     FILE* file_user;
     printf("SIGNUP\n");
     readCredentials(username, password);
-    file_user = fopen("./user.txt", "a");
+    file_user = fopen("./server/documents/user.txt", "a");
     if(file_user == NULL){
         printf("Errore nell'apertura del file\n");
         return;

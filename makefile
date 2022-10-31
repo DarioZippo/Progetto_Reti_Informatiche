@@ -7,7 +7,7 @@ dev: device.o vector.o
 	gcc -Wall -o dev device.o vector.o
 
 device.o: device.c
-	gcc -c -Wall -o device.o device.c
+	gcc -Wall -c -g device.c
 
 vector.o: device/vector.c 
 	gcc -Wall -c -g device/vector.c
@@ -17,19 +17,19 @@ serv: server.o serverCommands.o deviceCommands.o util.o vector.o messaggio.o rec
 	gcc -Wall server.o serverCommands.o deviceCommands.o util.o vector.o messaggio.o record.o -o serv
 
 server.o: server.c
-	gcc -Wall -c -g server.o server.c 
+	gcc -Wall -c -g server.c 
 
 serverCommands.o: server/src/serverCommands.c 
-	gcc -Wall -c -g server/src/serverCommands.o server/src/serverCommands.c
+	gcc -Wall -c -g server/src/serverCommands.c
 
 deviceCommands.o: server/src/deviceCommands.c 
-	gcc -Wall -c -g server/src/deviceCommands.o server/src/deviceCommands.c
+	gcc -Wall -c -g server/src/deviceCommands.c
 
 util.o: server/src/util.c 
-	gcc -Wall -c -g server/src/util.o server/src/util.c
+	gcc -Wall -c -g server/src/util.c
 
 vector.o: server/src/vector.c 
-	gcc -Wall -c -g server/src/vector.o server/src/vector.c
+	gcc -Wall -c -g server/src/vector.c
 
 messaggio.o: server/src/messaggio.c
 	gcc -Wall -c -g server/src/messaggio.c
