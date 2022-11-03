@@ -3,13 +3,13 @@
 #include "./vector.h"
 
 struct Message{
-    char mess[1024];
+    char mess[BUFFER_SIZE];
     bool received; // false: inviato e non ricevuto, true: inviato e ricevuto
     time_t send_timestamp;
 };
 
 struct UserMessages{
-    char sender[1024];
+    char sender[BUFFER_SIZE];
     vector message_list;
     vector to_read;
     int total;
@@ -19,13 +19,13 @@ struct UserMessages{
 extern void userMessagesInit(struct UserMessages *u);
 
 struct StructMessage{
-    char dest[1024];
+    char dest[BUFFER_SIZE];
     vector userMessagesList;
 };
 
 extern void structMessageInit(struct StructMessage *sm);
 
 struct UsersLink{
-    char sender[1024];
-    char dest[1024];
+    char sender[BUFFER_SIZE];
+    char dest[BUFFER_SIZE];
 };

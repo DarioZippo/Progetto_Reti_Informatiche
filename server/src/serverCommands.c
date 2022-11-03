@@ -16,7 +16,7 @@
 #include "./../include/vector.h"
 #include "./../include/messaggio.h"
 
-#include "./../../globals.h"
+#include "./../include/globals.h"
 
 void help(){
     printf("I need somebody\n"

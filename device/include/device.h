@@ -9,23 +9,6 @@
 
 #include "./vector.h"
 
-#define BUFFER_SIZE 1024
-#define RESPONSE_LEN 9 // HH:MM:SS\0
-
-typedef int bool;
-#define true 1
-#define false 0
-
-int sd, ret, port, len, new_sd, server_port;
-char buffer[1024], username[1024];
-uint16_t lmsg;
-struct sockaddr_in server_addr, my_addr, peer_addr;
-int username_len;
-bool logged = false;
-fd_set master; 
-fd_set read_fds;
-int fdmax, listener_sock;
-
 void chatStateInit();
 void readCredentials(char* credentials);
 void sendCredentials(char* credentials, int command);
@@ -42,7 +25,9 @@ void chat();
 void chatP2P(int new_sd, char* message);
 void share(int sock, char* message);
 void receiveSharedFile();
-void groupChat();
+void receiveChatInfo();
+void groupChat(int new_sd, char* message);
+void groupUpdate(int current_s);
 void addGroupMember(int new_sd, char* message);
 void readSentMessages(char* dest);
 void updateSentMessages(char* dest);

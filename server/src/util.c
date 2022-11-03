@@ -16,7 +16,7 @@
 #include "./../include/vector.h"
 #include "./../include/messaggio.h"
 
-#include "./../../globals.h"
+#include "./../include/globals.h"
 
 void insertLoggedUser(char* username, int port){
     int len = strlen(username);
@@ -71,7 +71,7 @@ void writeLoginOnFile(char* username, char* record, int len, int porta, time_t r
     fclose(file_login);
 }
 
-// Invio notifica UDP per l'aggiornamento della cronologia messaggi
+// Invio notifica per l'aggiornamento della cronologia messaggi
 void sendNotification(char* username){
     struct UsersLink* temp_ul;
 
@@ -86,7 +86,6 @@ void sendNotification(char* username){
         return;
     }
 
-    // Tecnica dei due puntatori
     for(int i = 0; i < usersLink.pfVectorTotal(&usersLink); i++){
         temp_ul = (struct UsersLink*)usersLink.pfVectorGet(&usersLink, i);
         if(strcmp(temp_ul->sender, username) == 0){

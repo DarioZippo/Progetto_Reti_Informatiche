@@ -14,22 +14,7 @@
 #include "./server/include/record.h"
 #include "./server/include/util.h"
 
-#include "globals.h"
-
-int listener, ret, addrlen, len, sd, current_s, port, command;
-uint16_t lmsg, s_command;
-    
-fd_set master; 
-fd_set read_fds; 
-int fdmax; 
-
-struct sockaddr_in my_addr, cl_addr;
-char buffer[BUFFER_SIZE];
-
-struct UserRegister userRegister;
-
-vector messages;
-vector usersLink;
+#include "./server/include/globals.h"
 
 int main(int argc, char** argv){
     // porta di ascolto viene passata come argomento, se non passata si utilizza la 4242
@@ -42,8 +27,7 @@ int main(int argc, char** argv){
     vector_init(&messages);
     vector_init(&usersLink);
 
-    int ret, newfd, addrlen, len, k, choice; 
-    char c_choice;
+    int ret, newfd, addrlen, choice;
 
     restore();
     showServerMenu();
@@ -80,7 +64,7 @@ int main(int argc, char** argv){
     // Aggiungo il socket di ascolto (listener), creato dalla socket() 
     // all'insieme dei descrittori da monitorare (master)
     FD_SET(sd, &master);
-    FD_SET(0, &master); //STDIN
+    FD_SET(STDIN, &master);
 
     // Aggiorno il massimo
     fdmax = sd; 
@@ -126,16 +110,15 @@ int main(int argc, char** argv){
                         fdmax = newfd;
                     }
                 } 
-                if(current_s == 0){
+                if(current_s == STDIN){
                     scanf("%d", &choice);
-                    //printf("Comando server: %d %c\n", choice, c_choice);
                     execServerCommand(choice);
                 }
                 // se non è il listener, 'i'' è un descrittore di socket 
                 // connesso che ha fatto la richiesta di orario, e va servito
                 // ***senza poi chiudere il socket*** perché l'orario
                 // potrebbe essere chiesto nuovamente al server
-                if(current_s != sd && current_s != 0){ // socket di comunicazione
+                if(current_s != sd && current_s != STDIN){ // socket di comunicazione
                     // ricevo la lunghezza del messaggio
                     ret = recv(current_s, (void*)&s_command, sizeof(uint16_t), 0);
                     if(ret == 0){
@@ -154,18 +137,14 @@ int main(int argc, char** argv){
                     command = ntohs(s_command);
                     printf("comando client rilevata: %d\n", command);
                     execDeviceCommand(command);
-                    //showRegister();
                 } 
             }
         
         }
-        //break;
     }
-    // ci arrivo solo se monitoro stdin (descrittore 0)
-    // -> rompo il while e passo a chiudere il listener
     
-    printf("CHIUDO IL LISTENER!\n");
+    printf("FINE\n");
     fflush(stdout);
-    close(listener);
+    close(sd);
  
 }

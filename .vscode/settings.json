@@ -13,6 +13,8 @@
         "globals.h": "c",
         "dev": "c",
         "messaggio.h": "c",
-        "alloca.h": "c"
+        "alloca.h": "c",
+        "util.h": "c",
+        "record.h": "c"
     }
 }

@@ -7,15 +7,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "./device/device.h"
-#include "./device/chat_state.h"
-#include "./device/vector.h"
-
-typedef int bool;
-#define true 1
-#define false 0
-
-struct ChatState chatState;
+#include "./server/include/constants.h"
+#include "./device/include/device.h"
+#include "./device/include/chat_state.h"
+#include "./device/include/vector.h"
+#include "./device/include/globals.h"
 
 void chatStateInit(){
     chatState.chat_on = false;
@@ -23,7 +19,7 @@ void chatStateInit(){
 }
 
 void sendCredentials(char* credentials, int command){
-    char current_username[BUFFER_SIZE], password[BUFFER_SIZE], cmd[7];
+    char current_username[BUFFER_SIZE], password[BUFFER_SIZE];
     int current_username_len, password_len, i, divider = -1;
     int lmsg; // variabili per l'invio della lunghezza delle stringhe
     // cerco gli spazi che indicano la separazione tra comando-username-password
@@ -160,7 +156,7 @@ void peerDisconnection(int sock){
 
 bool searchContact(char* user){
     FILE* file_contacts;
-    char *line, *current_contact;
+    char *line;
     char path[150];
     int read;
     bool found = false;
@@ -451,7 +447,7 @@ void share(int sock, char* message){
     // salva anche res qualore i bit letti fosseri minori di 10240
     while( (res = fread(buf, 1, 10240, fp)) > 0){
         sended+=res;
-        printf("Sended: %d\n", sended);
+        printf("Sended: %ld\n", sended);
         // invia il numero di bit che ha letto
         len = htons(res);
         ret = send(sock, &len, sizeof(uint16_t), 0);
@@ -800,7 +796,7 @@ void groupUpdate(int current_s){
 
 void readSentMessages(char* dest){
     FILE* chat_file;
-    char *line, *current_contact;
+    char *line;
     char path[150];
     int read;
     bool receive_check = true;
@@ -847,7 +843,7 @@ void readSentMessages(char* dest){
 // i messaggi che non erano stati ricevuti dopo che è stata eseguita la show sono stati ricevuti
 void updateSentMessages(char* dest){
     FILE* chat_file;
-    char *line, *current_contact;
+    char *line;
     char path[150];
     int read;
     bool not_received;
@@ -934,7 +930,6 @@ void receiveChatInfo(){
 
 void showOnlineUsers(){
     char current_online_user[1024];
-    uint16_t len;
 
     printf("UTENTI ONLINE\n");
 
@@ -1155,7 +1150,7 @@ void execUserCommand(char command){
 
 int main(int argc, char** argv){
     uint16_t port_16_bit;
-    int choice, i;
+    int i;
     char command, message[1024];
 
     // se il server è in ascolto su una porta diversa da 4242 deve essere passata come secondo argomento
@@ -1173,7 +1168,7 @@ int main(int argc, char** argv){
         //return -1;
     }
     
-    char buffer[BUFFER_SIZE];
+    logged = false;
 
     chatStateInit();
 
@@ -1261,7 +1256,7 @@ int main(int argc, char** argv){
                         chatState.socket_group[chatState.members_number++] = new_sd;
                 }
                 // se i == 0, stdin è pronto in lettura, l'utente ha digitato un comando oppure inviato un messaggio
-                else if(i == 0){
+                else if(i == STDIN){
                     fgets(message, 1024, stdin);
                     // quando c'è una chat in corso non si possono digitare altri comandi
                     // se c'è una chat di gruppo in corso i messaggi vengono inviati al gruppo
@@ -1281,7 +1276,7 @@ int main(int argc, char** argv){
                 // Negli altri casi un socket di comunicazione è pronto
                 // sto ricevendo messaggi da una chat P2P
                 // la connessione perciò è già stata effettuata precedentemente
-                else if(i != listener_sock && i != 0){
+                else if(i != listener_sock && i != STDIN){
                     // mittente e messaggio possono essere al più 1024 caratteri
                     char sender[1024];
 

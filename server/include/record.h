@@ -1,3 +1,6 @@
+#ifndef RECORD_H
+#define RECORD_H
+
 #include <time.h>
 #include "./vector.h"
 
@@ -16,3 +19,4 @@ struct UserRegister{
 };
 
 extern void userRegisterInit(struct UserRegister *u);
+#endif

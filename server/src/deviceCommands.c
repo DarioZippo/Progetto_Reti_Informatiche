@@ -15,7 +15,7 @@
 #include "./../include/util.h"
 #include "./../include/vector.h"
 #include "./../include/messaggio.h"
-#include "./../../globals.h"
+#include "./../include/globals.h"
 
 void execDeviceCommand(int command){
     switch (command)

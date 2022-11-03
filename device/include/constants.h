@@ -1,5 +1,5 @@
 #define BUFFER_SIZE 1024
-#define REQUEST_LEN 4 // REQ\0
+#define RESPONSE_LEN 9 // HH:MM:SS\0
 
 #define STDIN 0
 

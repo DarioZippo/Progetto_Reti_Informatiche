@@ -1,3 +1,6 @@
+void execDeviceCommand(int command);
+void showDeviceMenu();
+int inputDeviceMenu();
 void signup();
 void in();
 void hanging();

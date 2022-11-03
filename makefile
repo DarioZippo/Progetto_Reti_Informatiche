@@ -3,40 +3,53 @@
 all: dev serv
 
 # make rule per il device 
-dev: device.o vector.o
-	gcc -Wall -o dev device.o vector.o
+dev: device.o ./device/src/globals.o ./device/src/vector.o
+	gcc -Wall -o dev device.o ./device/src/globals.o ./device/src/vector.o
 
 device.o: device.c
 	gcc -Wall -c -g device.c
 
-vector.o: device/vector.c 
-	gcc -Wall -c -g device/vector.c
+dev_globals.o: globals.c 
+	gcc -Wall -c -g device/src/globals.c
+
+dev_vector.o: vector.c 
+	gcc -Wall -c -g device/src/vector.c
 
 # make rule per il server 
-serv: server.o serverCommands.o deviceCommands.o util.o vector.o messaggio.o record.o
-	gcc -Wall server.o serverCommands.o deviceCommands.o util.o vector.o messaggio.o record.o -o serv
+serv: server.o  ./server/src/globals.o ./server/src/serverCommands.o ./server/src/deviceCommands.o ./server/src/util.o ./server/src/vector.o ./server/src/messaggio.o ./server/src/record.o
+	gcc -Wall server.o ./server/src/globals.o ./server/src/serverCommands.o ./server/src/deviceCommands.o ./server/src/util.o ./server/src/vector.o ./server/src/messaggio.o ./server/src/record.o -o serv
 
 server.o: server.c
 	gcc -Wall -c -g server.c 
 
-serverCommands.o: server/src/serverCommands.c 
+serv_globals.o: globals.c 
+	gcc -Wall -c -g server/src/globals.c
+
+serverCommands.o: serverCommands.c 
 	gcc -Wall -c -g server/src/serverCommands.c
 
-deviceCommands.o: server/src/deviceCommands.c 
+deviceCommands.o: deviceCommands.c 
 	gcc -Wall -c -g server/src/deviceCommands.c
 
-util.o: server/src/util.c 
+util.o: util.c 
 	gcc -Wall -c -g server/src/util.c
 
-vector.o: server/src/vector.c 
+serv_vector.o: vector.c 
 	gcc -Wall -c -g server/src/vector.c
 
-messaggio.o: server/src/messaggio.c
+messaggio.o: messaggio.c
 	gcc -Wall -c -g server/src/messaggio.c
 
-record.o: server/src/record.c
+record.o: record.c
 	gcc -Wall -c -g server/src/record.c
 
 # pulizia dei file della compilazione (eseguito con make clean)
 clean:
+	mkdir -p ./device/chat_user1
+	mkdir -p ./device/chat_user2
+	mkdir -p ./device/chat_user3
 	rm *o dev serv
+	rm ./server/src/*.o ./device/src/*.o
+	echo "user2\nuser3" > device/contacts/user1.txt
+	echo "user1\nuser3" > device/contacts/user2.txt
+	echo "user1\nuser2" > device/contacts/user3.txt

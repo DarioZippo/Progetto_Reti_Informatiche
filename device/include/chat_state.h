@@ -1,6 +1,6 @@
-typedef int bool;
-#define true 1
-#define false 0
+#ifndef RECORD_H
+#define RECORD_H
+#include "./constants.h"
 
 struct ChatState{
     // Variabili per chat P2P
@@ -23,3 +23,4 @@ struct ChatState{
     //int porte_componenti_gruppo[10]; // max componenti gruppo: 10
     //int socket_componenti[10]; // socket per comunicazione con ogni componente del gruppo
 };
+#endif
