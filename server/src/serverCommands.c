@@ -101,8 +101,7 @@ void esc(){
 }
 
 void showServerMenu(){
-    printf("***************************** SERVER STARTED *********************************\n"
-        "Digita un comando:\n"
+    printf("Digita un comando:\n"
         "\n"
         "1) help --> mostra i dettagli dei comandi\n"
         "2) list --> mostra un elenco degli utenti connessi\n"

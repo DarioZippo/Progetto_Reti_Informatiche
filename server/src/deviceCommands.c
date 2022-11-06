@@ -58,20 +58,9 @@ void showDeviceMenu(){
     );
 }
 
-int inputDeviceMenu(){
-    int choice;
-    int min = 1, max = 5;
-    do{
-        scanf("%d", &choice);
-        //getchar(); //Risolve un bug tra scanf e fgets eseguiti in successione
-    }while(choice < min || choice > max);
-    printf("Input dato\n");
-    return choice;
-}
-
 // funzione per registrare nuovo utente
 void signup(){
-    char username[1024], password[1024];
+    char username[BUFFER_SIZE], password[BUFFER_SIZE];
     FILE* file_user;
     printf("SIGNUP\n");
     readCredentials(username, password);
@@ -88,7 +77,7 @@ void signup(){
 
 // funzione per l'accesso di un utente già registrato
 void in(){
-    char username[1024], password[1024], user_psw[2048];
+    char username[BUFFER_SIZE], password[BUFFER_SIZE], user_psw[2048];
     int port;
     bool found;
 
@@ -108,27 +97,39 @@ void in(){
     strcpy(user_psw, username);
     strcat(user_psw, " ");
     strcat(user_psw, password);
-    // trova utente restituisce true se trova il client con quelle credenziali nel file 0 altrimenti
+    // trova utente restituisce true se trova il client con quelle credenziali nel file false altrimenti
     found = searchUser(user_psw);
     // non l'ha trovato, non inserisco il login
     if(found == false){
         printf("Non sei ancora registrato\n");
-        return;
+        //Informo il client che il login non verrà effettuato
+        ret = send(current_s, "NO\0", 6, 0);
+        if(ret < 0){
+            printf("Errore nell'invio\n");
+            return;
+        }
     }
     else if(found == true){
+        //Informo il client che il login verrà effettuato
+        ret = send(current_s, "LOGIN\0", 6, 0);
+        if(ret < 0){
+            printf("Errore nell'invio\n");
+            return;
+        }
+
         insertLoggedUser(username, port);
-        sendNotification(username);
+        sendNotification(username, current_s);
     }
 }
 
 // funzione che implementa hanging
 void hanging(){
-    char dest[1024], num_mess_string[5];
-    char message_info[1055]; //username(1024) num. mess.(5) timestamp(24)
+    char dest[BUFFER_SIZE], num_mess_string[5];
+    char message_info[1055]; //username(BUFFER_SIZE) num. mess.(5) timestamp(24)
     bool found = false;
 
     printf("HANGING\n");
-    ret = recv(current_s, (void*)&dest, 1024, 0);
+    ret = recv(current_s, (void*)&dest, BUFFER_SIZE, 0);
     if(ret < 0){
         perror("Errore in fase di ricezione: \n");
         return;
@@ -196,7 +197,8 @@ void hanging(){
 
 // funzione che implementa show
 void show(){
-    char sender[1024], dest[1024];
+    char sender[BUFFER_SIZE], dest[BUFFER_SIZE];
+    int target_s;
     bool found;
 
     struct UsersLink* temp_ul;
@@ -239,10 +241,10 @@ void show(){
         clientDisconnection(current_s);
         return;
     }
-    //user[strlen(user)-1] = '\0';
-
+    //printf("dest: %s, len: %d, %d\n", dest, len, strlen(dest));
+    dest[len] = '\0';
     // Aggiorno struttura dati sulle show che sono state eseguite
-    // Inserisco in testa alla lista la struct_per_show contenente le info sulla nuova show
+    // Inserisco nel vettore usersLink contenente le info sulla nuova show
     temp_ul = (void*) malloc(sizeof(struct UsersLink));
     strcpy(temp_ul->sender, sender);
     strcpy(temp_ul->dest, dest);
@@ -310,7 +312,7 @@ void show(){
     temp_tr = &temp_s->message_list;
     for(int i = 0; i < temp_tr->pfVectorTotal(temp_tr); i++){
         temp_m = (struct Message*)temp_tr->pfVectorGet(temp_tr, i);
-        ret = send(current_s, temp_m->mess, 1024, 0);
+        ret = send(current_s, temp_m->mess, BUFFER_SIZE, 0);
         if(ret < 0){
             printf("Errore invio\n");
             return;
@@ -321,6 +323,12 @@ void show(){
     temp_s->total = 0;
     //vector_init(&temp_s->message_list);
     vector_init(&temp_s->to_read);
+
+    //Mando la notifica al sender nel caso sia online
+    int p = isItOnline(sender, &target_s);
+    if(p != 0){
+        sendNotification(sender, target_s);
+    }
 }
 
 // funzione per implementare chat
@@ -329,7 +337,7 @@ void show(){
 // se è online invia la porta a cui si è connesso username_destinatario
 // se è offline invia 0
 void chat(){
-    char username[1024];
+    char username[BUFFER_SIZE];
     int p = 0; // porta rimane a 0 se non trovo l'username nella lista
     uint16_t pp;
 
@@ -357,19 +365,7 @@ void chat(){
 
     printf("%s con len: %d, %d\n", username, strlen(username), len);
 
-    struct Record* temp;
-    for(int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
-        temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
-        //printf("Temp: %s con len: %d\n", temp->username, strlen(temp->username));
-        if(strcmp(temp->username, username) == 0){
-            printf("Trovato nella lista\n");
-            if(temp->logout == (time_t) NULL){ // timestamp_logout == NULL significa che è online
-                printf("E' ONLINE!!!!\n");
-                p = temp->port;
-            }
-            break;
-        }
-    }
+    p = isItOnline(username);
 
     pp = htons(p);
     ret = send(current_s, (void*) &pp, sizeof(uint16_t), 0);
@@ -381,13 +377,13 @@ void chat(){
 
 // funzione che server per memorizzare messaggi inviati quando il destinatario è offline
 void pendentMessage(){
-    char sender[1024], dest[1024], message[1024];
+    char sender[BUFFER_SIZE], dest[BUFFER_SIZE], message[BUFFER_SIZE];
     time_t rawtime;
     bool found = false;
 
     printf("PENDENTE\n");
     // ricevo username del mittente
-    ret = recv(current_s, (void*)&sender, 1024, 0);
+    ret = recv(current_s, (void*)&sender, BUFFER_SIZE, 0);
     if(ret < 0){
         perror("Errore in fase di ricezione: \n");
         return;
@@ -398,7 +394,7 @@ void pendentMessage(){
     }
 
     // ricevo username del destinatario
-    ret = recv(current_s, (void*)&dest, 1024, 0);
+    ret = recv(current_s, (void*)&dest, BUFFER_SIZE, 0);
     if(ret < 0){
         perror("Errore in fase di ricezione: \n");
         return;
@@ -409,7 +405,7 @@ void pendentMessage(){
     }
 
     // ricevo messaggio
-    ret = recv(current_s, (void*)&message, 1024, 0);
+    ret = recv(current_s, (void*)&message, BUFFER_SIZE, 0);
     if(ret < 0){
         perror("Errore in fase di ricezione: \n");
         return;
@@ -497,7 +493,7 @@ void showOnlineUsers(){
         temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
         //printf("Temp: %s con len: %d\n", temp->username, strlen(temp->username));
         if(temp->logout == (time_t) NULL){ // timestamp_logout == NULL significa che è online
-            ret = send(current_s, temp->username, 1024, 0);
+            ret = send(current_s, temp->username, BUFFER_SIZE, 0);
             if(ret < 0){
                 printf("Errore invio\n");
                 return;

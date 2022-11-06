@@ -23,16 +23,18 @@ int main(int argc, char** argv){
     else
         port = 4242;
 
+    printf("************ SERVER STARTED ************\n");
+
     userRegisterInit(&userRegister);
     vector_init(&messages);
     vector_init(&usersLink);
 
-    int ret, newfd, addrlen, choice;
+    int ret, newsd, addrlen, choice;
 
     restore();
     showServerMenu();
 
-    /* Creazione socket */
+    // Creazione socket di ascolto
     sd = socket(AF_INET, SOCK_STREAM, 0);
     if(sd == -1){
         printf("Errore nella creazione del socket\n");
@@ -57,16 +59,15 @@ int main(int argc, char** argv){
         exit(-1);
     }
     
-    // Reset FDs
+    // azzeramento fd_set
     FD_ZERO(&master);
     FD_ZERO(&read_fds);
     
-    // Aggiungo il socket di ascolto (listener), creato dalla socket() 
-    // all'insieme dei descrittori da monitorare (master)
+    // inserisco i socket che servono nel master
+    // setto opportunamente fdmax
     FD_SET(sd, &master);
     FD_SET(STDIN, &master);
 
-    // Aggiorno il massimo
     fdmax = sd; 
     
     //main loop 
@@ -75,50 +76,40 @@ int main(int argc, char** argv){
         // Inizializzo il set read_fds, manipolato dalla select()
         read_fds = master; 
         
-        // Mi blocco in attesa di descrottori pronti in lettura
-        // imposto il timeout a infinito
-        // Quando select() si sblocca, in &read_fds ci sono solo
-        // i descrittori pronti in lettura!
+        // dopo la select in read_fds rimangono solo i file descriptor dei socket pronti
         ret = select(fdmax+1, &read_fds, NULL, NULL, NULL);
         if(ret<0){
             perror("ERRORE SELECT:");
             exit(1);
         }
-        
-        // Spazzolo i descrittori 
         for(current_s = 0; current_s <= fdmax; current_s++) { 
-
-            // controllo se i è pronto 
+            // controllo se current_s è pronto 
             if(FD_ISSET(current_s, &read_fds)) { 
-
-                // se i è il listener, ho ricevuto una richiesta di connessione
-                // (un client ha invocato connect())
+                // se current_s == listener_sock significa che ci sono nuove connessioni, perciò faccio accept 
                 if(current_s == sd) { 
                     
                     printf("Nuovo client rilevato!\n");
                     fflush(stdout);
                     addrlen = sizeof(cl_addr);
-                    // faccio accept() e creo il socket connesso 'newfd'
-                    newfd = accept(sd,
+                    // faccio accept() e creo il socket connesso 'newsd'
+                    newsd = accept(sd,
                     (struct sockaddr *)&cl_addr, &addrlen);
                     
                     // Aggiungo il descrittore al set dei socket monitorati
-                    FD_SET(newfd, &master); 
+                    FD_SET(newsd, &master); 
                     
                     // Aggiorno l'ID del massimo descrittore
-                    if(newfd > fdmax){ 
-                        fdmax = newfd;
+                    if(newsd > fdmax){ 
+                        fdmax = newsd;
                     }
                 } 
+                // file descriptor stdin, è stato digitato un comando
                 if(current_s == STDIN){
                     scanf("%d", &choice);
                     execServerCommand(choice);
                 }
-                // se non è il listener, 'i'' è un descrittore di socket 
-                // connesso che ha fatto la richiesta di orario, e va servito
-                // ***senza poi chiudere il socket*** perché l'orario
-                // potrebbe essere chiesto nuovamente al server
-                if(current_s != sd && current_s != STDIN){ // socket di comunicazione
+                // socket di comunicazione
+                if(current_s != sd && current_s != STDIN){
                     // ricevo la lunghezza del messaggio
                     ret = recv(current_s, (void*)&s_command, sizeof(uint16_t), 0);
                     if(ret == 0){
@@ -130,7 +121,7 @@ int main(int argc, char** argv){
                         perror("ERRORE! \n");
                         // si è verificato un errore
                         clientDisconnection(current_s);
-                        // rimuovo il descrittore newfd da quelli da monitorare
+                        // rimuovo il descrittore newsd da quelli da monitorare
                         FD_CLR(current_s, &master);
                         continue;
                     }

@@ -5,7 +5,7 @@
 #include "./vector.h"
 
 struct Record{
-    char username[1024];
+    char username[BUFFER_SIZE];
     int port;
     time_t login;
     time_t logout;

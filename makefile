@@ -53,3 +53,4 @@ clean:
 	echo "user2\nuser3" > device/contacts/user1.txt
 	echo "user1\nuser3" > device/contacts/user2.txt
 	echo "user1\nuser2" > device/contacts/user3.txt
+	echo "" > server/documents/saved_messages.txt

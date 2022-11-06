@@ -71,25 +71,46 @@ void writeLoginOnFile(char* username, char* record, int len, int porta, time_t r
     fclose(file_login);
 }
 
+// verifico se l'utente target è online, nel caso restituisco la porta, 0 altrimenti
+int isItOnline(char* username, int* target_s){
+    int p = 0; // porta rimane a 0 se non trovo l'username nella lista
+    struct Record* temp;
+    for(int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
+        temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
+        printf("Temp: %s con len: %d\n", temp->username, strlen(temp->username));
+        if(strcmp(temp->username, username) == 0){
+            printf("Trovato nella lista\n");
+            if(temp->logout == (time_t) NULL){ // timestamp_logout == NULL significa che è online
+                printf("E' ONLINE!!!!\n");
+                p = temp->port;
+                *target_s = temp->socket;
+            }
+            break;
+        }
+    }
+    return p;
+}
+
 // Invio notifica per l'aggiornamento della cronologia messaggi
-void sendNotification(char* username){
+void sendNotification(char* username, int target_s){
     struct UsersLink* temp_ul;
 
     // mando la notifica al client che ha appena fatto l'accesso
-    ret = send(current_s, "NOTIFICA\0", 1024, 0);
+    ret = send(target_s, "NOTIFICA\0", BUFFER_SIZE, 0);
     if(ret < 0){
         perror("Errore in fase di ricezione: \n");
         return;
     }
     if(ret == 0){
-        clientDisconnection(current_s);
+        clientDisconnection(target_s);
         return;
     }
 
     for(int i = 0; i < usersLink.pfVectorTotal(&usersLink); i++){
         temp_ul = (struct UsersLink*)usersLink.pfVectorGet(&usersLink, i);
         if(strcmp(temp_ul->sender, username) == 0){
-            ret = send(current_s, temp_ul->dest, 1024, 0);
+            printf("Ha fatto show: %s\n", temp_ul->dest);
+            ret = send(target_s, temp_ul->dest, BUFFER_SIZE, 0);
             if(ret < 0){
                 printf("Errore invio\n");
                 return;
@@ -100,7 +121,7 @@ void sendNotification(char* username){
     }
 
     // invio 0 quando non ci sono più username da inviare
-    ret = send(current_s, "\0", 1024, 0);
+    ret = send(target_s, "\0", BUFFER_SIZE, 0);
     if(ret < 0){
         printf("Errore invio\n");
         return;
@@ -127,25 +148,11 @@ bool searchUser(char* user_psw){
 
         if(strcmp(line, user_psw) == 0){ 
             found = true;
-            /*
-            ret = send(i, "LOGIN\0", 6, 0);
-            if(ret < 0){
-                printf("Errore nell'invio\n");
-                return 0;
-            }
-            */
             break;
         }
     }
     //printf("Dopo la lettura\n");
     // se non l'ha trovato, invia "NO" e il client rileva che il login ha fallito
-    if(found == false){
-        /*ret = send(i, "NO\0", 6, 0);
-        if(ret < 0){
-            printf("Errore nell'invio\n");
-            return 0;
-        }*/
-    }
     fclose(file_user);
     printf("Fine ricerca: %d\n", found);
     return found;
