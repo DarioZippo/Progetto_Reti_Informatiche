@@ -17,6 +17,8 @@ int vectorResize(vector *v, int capacity)
     int status = UNDEFINE;
     if(v)
     {
+        size_t size = sizeof(void *) * capacity;
+        printf("realloc %u bytes\n", size);
         void **items = realloc(v->vectorList.items, sizeof(void *) * capacity);
         if (items)
         {

@@ -75,7 +75,8 @@ void writeLoginOnFile(char* username, char* record, int len, int port, time_t ra
 int isItOnline(char* username, int* target_s){
     int p = 0; // porta rimane a 0 se non trovo l'username nella lista
     struct Record* temp;
-    for(int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
+    int i;
+    for(i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
         temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
         //printf("Temp: %s con len: %d\n", temp->username, strlen(temp->username));
         if(strcmp(temp->username, username) == 0){
@@ -106,7 +107,8 @@ void sendNotification(char* username, int target_s){
         return;
     }
 
-    for(int i = 0; i < usersLink.pfVectorTotal(&usersLink); i++){
+    int i;
+    for(i = 0; i < usersLink.pfVectorTotal(&usersLink); i++){
         temp_ul = (struct UsersLink*)usersLink.pfVectorGet(&usersLink, i);
         if(strcmp(temp_ul->sender, username) == 0){
             printf("Ha fatto show: %s\n", temp_ul->dest);
@@ -131,8 +133,9 @@ void sendNotification(char* username, int target_s){
 // trova utente, utilizzata in fase di login per cercare utente registrato nel file user.txt
 bool searchUser(char* user_psw){
     FILE* file_user;
-    char* line, current_credentials;
+    char* line = NULL, current_credentials;
     int read;
+    size_t n = 0;
     bool found = false;
 
     file_user = fopen("./server/documents/user.txt", "r");
@@ -141,7 +144,7 @@ bool searchUser(char* user_psw){
         return false;
     }
 
-    while ((read = getline(&line, &len, file_user)) != -1) {
+    while ((read = getline(&line, &n, file_user)) != -1) {
         //printf("Retrieved line of length %zu:\n", read);
         line[read - 1] = '\0';
         //printf("%s\n", line);
@@ -245,8 +248,9 @@ void clientDisconnection(int sock){
 // il file viene scritto quando si fa esc
 void restoreMessages(){
     FILE* saved_messages;
-    char *line;
-    int current_type = 0, num_mess, read; 
+    char *line = NULL;
+    int current_type = 0, num_mess, read;
+    size_t n;
     bool first_sender = true, primo_non_ric = true, no_read = false;
     struct StructMessage* temp_sm;
     struct UserMessages* temp_um;
@@ -256,7 +260,7 @@ void restoreMessages(){
     saved_messages = fopen("./server/documents/saved_messages.txt", "r");
     if(saved_messages == NULL){
         printf("Errore nell'apertura del file\n");
-        return false;
+        return;
     }
     // il codice sottostante serve per ricreare le liste dei messaggi pendenti a partire dal file
     // sapendo che il file è strutturato in una particolare maniera
@@ -272,7 +276,7 @@ void restoreMessages(){
     // timestamp invio (salvato come short unsigned int)
     while(1){
         if(no_read == false){
-            read = getline(&line, &len, saved_messages);
+            read = getline(&line, &n, saved_messages);
             if(read == -1)
                 break;
         }
@@ -289,7 +293,7 @@ void restoreMessages(){
                 temp_sm = (struct StructMessage*)messages.pfVectorGet(&messages, messages.pfVectorTotal(&messages) - 1);
                 structMessageInit(temp_sm);
                 
-                read = getline(&line, &len, saved_messages);
+                read = getline(&line, &n, saved_messages);
                 if(read == -1)
                     break;
 
@@ -306,7 +310,7 @@ void restoreMessages(){
                 temp_um = (struct UserMessages*)temp_v->pfVectorGet(temp_v, temp_v->pfVectorTotal(temp_v) - 1);
                 userMessagesInit(temp_um);
                 
-                read = getline(&line, &len, saved_messages);
+                read = getline(&line, &n, saved_messages);
                 if(read == -1)
                     break;
 
@@ -328,16 +332,17 @@ void restoreMessages(){
                 num_mess = strtol(line, NULL, 10);
                 temp_um->total = num_mess;
                 
-                read = getline(&line, &len, saved_messages);
+                read = getline(&line, &n, saved_messages);
                 if(read == -1)
                     break;
                 
                 //Ho un for grande il triplo del numero di messaggi perchè per ogni messaggi ci sono 3 fasi
-                for(int j = 0; j < num_mess * 3; j++){
+                int j;
+                for(j = 0; j < num_mess * 3; j++){
                     //Evito la lettura nella fase 1, perchè già fatta nell'iterazione precedente
                     //o nel case SEND
                     if(j%3 != 0){
-                        read = getline(&line, &len, saved_messages);
+                        read = getline(&line, &n, saved_messages);
                         if(read == -1)
                             break;
                     }
@@ -368,7 +373,7 @@ void restoreMessages(){
                         
                         //Qui si fa la lettura per decidere il prossimo passo
                         //Se reiterarsi nel for o spostarsi nello switch più esterno
-                        read = getline(&line, &len, saved_messages);
+                        read = getline(&line, &n, saved_messages);
                         if(read == -1)
                             break;
                         if(strncmp(line, "mitt:", 5) == 0){
@@ -392,13 +397,14 @@ void restoreMessages(){
 
 void restore(){
     restoreMessages();
-    //showChats();
+    showChats();
 }
 
 void showChats(){
     struct StructMessage* temp_m;
     printf("Liste structMessage: ");
-    for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
+    int i;
+    for(i = 0; i < messages.pfVectorTotal(&messages); i++){
         temp_m = (struct StructMessage*)messages.pfVectorGet(&messages, i);
         printf("sm: %s\n", temp_m->dest);
         showUserMessages(&temp_m->userMessagesList);
@@ -409,7 +415,8 @@ void showChats(){
 void showUserMessages(vector *v){
     struct UserMessages* temp_um;
     printf("Lista mittenti: ");
-    for(int i = 0; i < v->pfVectorTotal(v); i++){
+    int i;
+    for(i = 0; i < v->pfVectorTotal(v); i++){
         temp_um = (struct UserMessages*)v->pfVectorGet(v, i);
         printf("mitt: %s\n", temp_um->sender);
         showMessages(&temp_um->message_list);
@@ -419,7 +426,8 @@ void showUserMessages(vector *v){
 void showMessages(vector *v){
     struct Message* temp_m;
     printf("Lista messaggi: ");
-    for(int i = 0; i < v->pfVectorTotal(v); i++){
+    int i;
+    for(i = 0; i < v->pfVectorTotal(v); i++){
         if(i != 0)
             printf(" -> ");
         temp_m = (struct Message*)v->pfVectorGet(v, i);
@@ -430,7 +438,8 @@ void showMessages(vector *v){
 void showUsersLinks(){
     struct UsersLink* temp_ul;
     printf("Lista UsersLink: ");
-    for(int i = 0; i < usersLink.pfVectorTotal(&usersLink); i++){
+    int i;
+    for(i = 0; i < usersLink.pfVectorTotal(&usersLink); i++){
         if(i != 0)
             printf(" -> ");
         temp_ul = (struct UsersLink*)usersLink.pfVectorGet(&usersLink, i);

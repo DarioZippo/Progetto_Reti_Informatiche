@@ -30,7 +30,8 @@ void showRegister(){
     printf("Utenti connessi: \n");
     struct Record* temp;
     bool first = true;
-    for(int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
+    int i;
+    for(i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
         temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
         if(temp->logout == (time_t) NULL){ // logout == NULL significa che è online
             if(first == false){
@@ -56,7 +57,8 @@ void esc(){
     bool first_dest_chat_message;
 
     struct Record* temp_r;
-    for (int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
+    int i;
+    for (i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
         temp_r = userRegister.records.pfVectorGet(&userRegister.records, i);
         if(temp_r->logout == (time_t) NULL){
             temp_r->logout = time(&rawtime);
@@ -71,18 +73,19 @@ void esc(){
     struct Message* temp_m;
 
     saved_messages = fopen("./server/documents/saved_messages.txt", "w");
-    for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
+    int j, k;
+    for(i = 0; i < messages.pfVectorTotal(&messages); i++){
         //printf("For 1\n");
         first_dest_chat_message = true;
         temp_sm = (struct StructMessage*)messages.pfVectorGet(&messages, i);
         
         temp_uml = &temp_sm->userMessagesList;
-        for(int j = 0; j < temp_uml->pfVectorTotal(temp_uml); j++){
+        for(j = 0; j < temp_uml->pfVectorTotal(temp_uml); j++){
             //printf("For 2\n");
 
             temp_um = (struct UserMessages*)temp_uml->pfVectorGet(temp_uml, j);
             temp_ml = &temp_um->message_list;
-            for(int k = 0; k < temp_ml->pfVectorTotal(temp_ml); k++){
+            for(k = 0; k < temp_ml->pfVectorTotal(temp_ml); k++){
                 //printf("For 3\n");                
                 temp_m = (struct Message*)temp_ml->pfVectorGet(temp_ml, k);
                 

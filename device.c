@@ -177,9 +177,10 @@ void peerDisconnection(int sock){
 
 bool searchContact(char* user){
     FILE* file_contacts;
-    char *line;
+    char *line = NULL;
     char path[150];
     int read;
+    size_t n;
     bool found = false;
 
     strcpy(path, "./device/contacts/");
@@ -194,7 +195,7 @@ bool searchContact(char* user){
         return false;
     }
 
-    while ((read = getline(&line, &len, file_contacts)) != -1) {
+    while ((read = getline(&line, &n, file_contacts)) != -1) {
         //printf("Retrieved line of length %zu:\n", read);
         line[read - 1] = '\0';
         //printf("%s\n", line);
@@ -207,7 +208,7 @@ bool searchContact(char* user){
     //printf("Dopo la lettura\n");
 
     fclose(file_contacts);
-    printf("Fine ricerca: %d\n", found);
+    //printf("Fine ricerca: %d\n", found);
     return found;
 }
 
@@ -429,7 +430,8 @@ void share(int sock, char* message){
         exit(1);
     }
 
-    for(int i = 0; i < strlen(message); i++){
+    int i;
+    for(i = 0; i < strlen(message); i++){
         if(message[i] == ' '){
             divider = i;
             break;
@@ -598,7 +600,8 @@ void addGroupMember(int new_sd, char* message){
 
     printf("AGGIUNTA AL GRUPPO\n");
     // cerco lo spazio che fa da separatore tra comando e username destinatario
-    for(int i = 0; i < strlen(message); i++){
+    int i;
+    for(i = 0; i < strlen(message); i++){
         if(message[i] == ' '){
             divider = i;
             break;
@@ -720,7 +723,7 @@ void addGroupMember(int new_sd, char* message){
         fdmax = new_member;
 
     // invio codice GRUPPO a tutti i componenti del gruppo, eccetto quello appena aggiunto
-    for(int i = 0; i < chatState.members_number - 1; i++){
+    for(i = 0; i < chatState.members_number - 1; i++){
         ret = send(chatState.socket_group[i], "GRUPPO\0", BUFFER_SIZE, 0);
         if(ret < 0){
             perror("Errore nell'invio\n");
@@ -731,7 +734,7 @@ void addGroupMember(int new_sd, char* message){
     // invio la porta del nuovo componente a tutti i componenti del gruppo (eccetto quello appena aggiunto)
     // in modo che i componenti possano fare la connessione col componente appena aggiunto
     pp = htons(send_port);
-    for(int i = 0; i < chatState.members_number - 1; i++){
+    for(i = 0; i < chatState.members_number - 1; i++){
         ret = send(chatState.socket_group[i], (void*)&pp, sizeof(uint16_t), 0);
         if(ret < 0){
             perror("Errore nell'invio\n");
@@ -811,9 +814,10 @@ void groupUpdate(int current_s){
 
 void readSentMessages(char* dest){
     FILE* chat_file;
-    char *line;
+    char *line = NULL;
     char path[150];
     int read;
+    size_t n;
     bool receive_check = true;
 
     printf("CRONOLOGIA MESSAGGI\n\n");
@@ -831,7 +835,7 @@ void readSentMessages(char* dest){
         return;
     }
 
-    while ((read = getline(&line, &len, chat_file)) != -1) {
+    while ((read = getline(&line, &n, chat_file)) != -1) {
         //printf("Retrieved line of length %zu:\n", read);
         line[read - 1] = '\0';
         //printf("%s\n", line);
@@ -860,7 +864,7 @@ void updateSentMessages(char* dest){
     FILE* chat_file;
     char *line = NULL, read_str[1024];
     char path[1050];
-    int read;
+    size_t n;
     bool not_received = false;
     int first_line = 0, lines_number = 0, j;
 
@@ -913,11 +917,11 @@ void updateSentMessages(char* dest){
     chat_file = fopen(path, "r+");
     for(j = 0; j < lines_number; j++){
         if(j < first_line) // ancora non devo modificare, perciò leggo solamente
-            getline(&line, &len, chat_file);
+            getline(&line, &n, chat_file);
         if(j >= first_line && (j-first_line)%2 == 0) // riga contenente il codice, scrivo 1
             fprintf(chat_file, "1\n");
         if(j >= first_line && (j-first_line)%2 != 0) // riga contenente un messaggio, leggo solamente
-            getline(&line, &len, chat_file);
+            getline(&line, &n, chat_file);
     }
 
     fclose(chat_file); // chiudo il file
@@ -969,7 +973,8 @@ void showOnlineUsers(){
     printf("Numero utenti online: %d\n", online_counter);
     // ricevo da server tutti gli username
     // sd --> socket comunicazione con server
-    for (int i = 0; i < online_counter; i++)
+    int i;
+    for(i = 0; i < online_counter; i++)
     {
         //printf("%d\n", i);
         ret = recv(sd, current_online_user, BUFFER_SIZE, 0);
@@ -1063,7 +1068,7 @@ void show(){
     }
     
     // invio lunghezza del mio username e poi il mio username
-    printf("%s: %d, %d\n", username, username_len, strlen(username));
+    //printf("%s: %d, %d\n", username, username_len, strlen(username));
     lmsg = htons(username_len);
     ret = send(sd, (void*) &lmsg, sizeof(uint16_t), 0);
     if(ret < 0){
@@ -1121,16 +1126,6 @@ void sendMessageToServer(char* sender, char* dest, char* message){
         return;
     }
 
-    /*
-    // invio lunghezza messaggio e poi codice a server
-    lmsg = htons(9);
-    ret = send(sd, (void*) &lmsg, sizeof(uint16_t), 0);
-    if(ret < 0){
-        printf("Errore in fase di invio\n");
-        return;
-    }
-    */
-
     // invio mittente
     ret = send(sd, (void*)sender, BUFFER_SIZE, 0);
     if(ret < 0){
@@ -1159,7 +1154,7 @@ void out(){
 }
 
 void execUserCommand(char command){
-    printf("exec: %c\n", command);
+    //printf("exec: %c\n", command);
     switch (command)
     {
     case '3':
@@ -1304,7 +1299,7 @@ int main(int argc, char** argv){
                     else{
                         command = message[0];
                         fflush(stdin);
-                        printf("choice: %c\n", command);
+                        //printf("choice: %c\n", command);
                         execUserCommand(command);
                     }
                 }

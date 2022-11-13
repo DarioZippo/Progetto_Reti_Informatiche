@@ -142,7 +142,8 @@ void hanging(){
     // cerco il mittente di hanging nella lista dei destinatari
     struct StructMessage* temp_m;
     
-    for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
+    int i;
+    for(i = 0; i < messages.pfVectorTotal(&messages); i++){
         temp_m = (struct StructMessage*)messages.pfVectorGet(&messages, i);
         //printf("Comp: %s con %s\n", temp_m->dest, dest);
         if(strcmp(temp_m->dest, dest) == 0){
@@ -168,7 +169,8 @@ void hanging(){
     struct UserMessages* temp_u;
 
     printf("%d\n", temp_v->pfVectorTotal(temp_v));
-    for(int j = 0; j < temp_v->pfVectorTotal(temp_v); j++){
+    int j;
+    for(j = 0; j < temp_v->pfVectorTotal(temp_v); j++){
         //printf("%d ", j);
         temp_u = (struct UserMessages*)temp_v->pfVectorGet(temp_v, j);
         if(temp_u->total > 0){
@@ -253,7 +255,8 @@ void show(){
     // cerco destinatario (chi ha eseguito show) nella lista dei destinatari dei messaggi pendenti
     struct StructMessage* temp_d;
     
-    for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
+    int i;
+    for(i = 0; i < messages.pfVectorTotal(&messages); i++){
         temp_d = (struct StructMessage*)messages.pfVectorGet(&messages, i);
         //printf("Comp: %s con %s\n", temp_m->dest, dest);
         if(strcmp(temp_d->dest, dest) == 0){
@@ -275,7 +278,7 @@ void show(){
     vector *temp_v = &temp_d->userMessagesList;
     struct UserMessages* temp_s;
 
-    for(int i = 0; i < temp_v->pfVectorTotal(temp_v); i++){
+    for(i = 0; i < temp_v->pfVectorTotal(temp_v); i++){
         //printf("%d ", i);
         temp_s = (struct UserMessages*)temp_v->pfVectorGet(temp_v, i);
         //printf("%s\n%s\n", sender, temp_s->sender);
@@ -310,7 +313,7 @@ void show(){
 
     //temp_tr = &temp_s->to_read;
     temp_tr = &temp_s->message_list;
-    for(int i = 0; i < temp_tr->pfVectorTotal(temp_tr); i++){
+    for(i = 0; i < temp_tr->pfVectorTotal(temp_tr); i++){
         temp_m = (struct Message*)temp_tr->pfVectorGet(temp_tr, i);
         ret = send(current_s, temp_m->mess, BUFFER_SIZE, 0);
         if(ret < 0){
@@ -418,7 +421,8 @@ void pendentMessage(){
     //printf("Ricerca destinatario %d\n", messages.pfVectorTotal(&messages));
     struct StructMessage* temp_sm;
     // cerco destinatario nella lista dei destinatari
-    for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
+    int i;
+    for(i = 0; i < messages.pfVectorTotal(&messages); i++){
         temp_sm = (struct StructMessage*)messages.pfVectorGet(&messages, i);
         if(strcmp(temp_sm->dest, dest) == 0){
             found = true;
@@ -441,7 +445,7 @@ void pendentMessage(){
     vector *temp_v = &temp_sm->userMessagesList;
     struct UserMessages* temp_u;
     //printf("Ricerca mittente %d\n", temp_v->pfVectorTotal(temp_v));
-    for(int i = 0; i < temp_v->pfVectorTotal(temp_v); i++){
+    for(i = 0; i < temp_v->pfVectorTotal(temp_v); i++){
         //printf("%d ", i);
         temp_u = (struct UserMessages*)temp_v->pfVectorGet(temp_v, i);
         if(strcmp(temp_u->sender, sender) == 0){
@@ -487,7 +491,8 @@ void showOnlineUsers(){
 
     struct Record* temp;
     // invio tutti gli utenti che sono online
-    for(int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
+    int i;
+    for(i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
         //printf("%d\n", i);
         temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
         //printf("Temp: %s con len: %d\n", temp->username, strlen(temp->username));

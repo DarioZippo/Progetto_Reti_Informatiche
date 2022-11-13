@@ -18,8 +18,8 @@
 
 int main(int argc, char** argv){
     // porta di ascolto viene passata come argomento, se non passata si utilizza la 4242
-    if(argv[1] != NULL)
-        port = strtol(argv[1], NULL, 10);
+    if(argc > 2)
+        port = strtol(argv[2], NULL, 10);
     else
         port = 4242;
 

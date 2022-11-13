@@ -12,3 +12,7 @@ ciao
 ciao
 1
 \a
+0
+hey
+0
+1
