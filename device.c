@@ -18,11 +18,13 @@ void chatStateInit(){
     chatState.group_chat_on = false;
 }
 
+//Invio le credenziali al server, insieme ad un intero che identifica il comando
+//1 per signup, 2 per login
 void sendCredentials(char* credentials, int command){
     char current_username[BUFFER_SIZE], password[BUFFER_SIZE];
     int current_username_len, password_len, i, divider = -1;
     int lmsg; // variabili per l'invio della lunghezza delle stringhe
-    // cerco gli spazi che indicano la separazione tra comando-username-password
+    // cerco gli spazi che indicano la separazione tra username-password
     for(i = 0; i < strlen(credentials); i++){
         if(credentials[i] == ' '){
             divider = i;
@@ -67,7 +69,7 @@ void sendCredentials(char* credentials, int command){
         printf("mio user: %s\n", username);
     }
 
-    // invio lunghezza della passwrod e poi la password
+    // invio lunghezza della password e poi la password
     lmsg = htons(password_len);
     ret = send(sd, (void*) &lmsg, sizeof(uint16_t), 0);
     if(ret < 0){
@@ -184,7 +186,7 @@ bool searchContact(char* user){
     strcat(path, username);
     strcat(path, ".txt");
 
-    printf("%s\n", path);
+    //printf("%s\n", path);
     
     file_contacts = fopen(path, "r");
     if(file_contacts == NULL){
@@ -199,13 +201,6 @@ bool searchContact(char* user){
 
         if(strncmp(line, user, strlen(line)) == 0){ 
             found = true;
-            /*
-            ret = send(i, "LOGIN\0", 6, 0);
-            if(ret < 0){
-                printf("Errore nell'invio\n");
-                return 0;
-            }
-            */
             break;
         }
     }
@@ -236,7 +231,6 @@ void chat(){
 
     // 1)invio il comando al server
     // 2)invio username destinatario
-    // 3)invio messaggio
     // MANDO UN INTERO COME COMANDO
     uint16_t s_command = htons(5);
     int ret = send(sd, (void*) &s_command, sizeof(uint16_t), 0);
@@ -459,8 +453,8 @@ void share(int sock, char* message){
     // ripristino del puntatore all'inizio del file
     fseek(fp, 0, SEEK_SET);
     
-    // manda il file in partizioni di BUFFER_SIZE0 bit
-    // salva anche res qualore i bit letti fosseri minori di BUFFER_SIZE0
+    // manda il file in partizioni di 10240 bit
+    // salva anche res qualore i bit letti fosseri minori di 10240
     while( (res = fread(buf, 1, 10240, fp)) > 0){
         sended+=res;
         printf("Sended: %ld\n", sended);
@@ -513,7 +507,6 @@ void receiveSharedFile(int current_s){
    }
 
     while(1){
-        printf("Pappa\n");
         ret = recv(current_s, &len, sizeof(uint16_t), 0);
         if(ret < 0){
             printf("Errore ricezione\n");
@@ -603,7 +596,7 @@ void addGroupMember(int new_sd, char* message){
     uint16_t pp;
     struct sockaddr_in peer;
 
-    printf("PROVO AD AGGIUNGERE A GRUPPO\n");
+    printf("AGGIUNTA AL GRUPPO\n");
     // cerco lo spazio che fa da separatore tra comando e username destinatario
     for(int i = 0; i < strlen(message); i++){
         if(message[i] == ' '){
@@ -615,8 +608,14 @@ void addGroupMember(int new_sd, char* message){
     // copio username destinatario nella variabile username
     dest_len = strlen(message) - divider - 1;
     strncpy(dest, &(message[divider+1]), dest_len);
-    dest[dest_len - 1] ='\0';
-    printf("Voglio aggiungere %s\ncon divider: %d\ndest_len: %d\n", dest, divider, dest_len);
+    dest[dest_len] ='\0';
+    //printf("Voglio aggiungere %s\ncon divider: %d\ndest_len: %d\n", dest, divider, dest_len);
+    //Verifico che dest sia in rubrica
+    bool found = searchContact(dest);
+    if(found == false){
+        printf("Il contatto non è in rubrica\n");
+        return;
+    }
     // invio comando e poi username destinatario
 
     // invio comando chat perchè il server non fa altro che dirmi se l'altro
@@ -856,7 +855,7 @@ void readSentMessages(char* dest){
 }
 
 // funzione per aggiornare il file della cronologia dei messaggi
-// i messaggi che non erano stati ricevuti dopo che è stata eseguita la show sono stati ricevuti
+// a seguito di una notifica di show
 void updateSentMessages(char* dest){ 
     FILE* chat_file;
     char *line = NULL, read_str[1024];
@@ -924,6 +923,8 @@ void updateSentMessages(char* dest){
     fclose(chat_file); // chiudo il file
 }
 
+//Funzione per ricevere la lista degli utenti che hanno fatto show
+//e richiamare l'update del file di cronologia messaggi relativo
 void receiveChatInfo(){
     char dest[BUFFER_SIZE];
 
@@ -1029,9 +1030,9 @@ void hanging(){
 }
 
 void show(){
-    char dest[BUFFER_SIZE], messagge[BUFFER_SIZE];
+    char dest[BUFFER_SIZE], message[BUFFER_SIZE];
     int dest_len, i, mess_number;
-    uint16_t q_mess;
+    uint16_t s_number_mess;
 
     printf("SHOW\n"
         "Inserire lo username del destinatario:\n");
@@ -1076,7 +1077,7 @@ void show(){
     }
     
     // ricevo il numero di messaggi che sto per ricevere
-    ret = recv(sd, (void*) &q_mess, sizeof(uint16_t), 0);
+    ret = recv(sd, (void*) &s_number_mess, sizeof(uint16_t), 0);
     if(ret < 0){
         printf("Errore nella ricezione\n");
         return;
@@ -1085,7 +1086,7 @@ void show(){
         printf("DISCONNESSIONE SERVER\n");
         exit(1);
     }
-    mess_number = ntohs(q_mess);
+    mess_number = ntohs(s_number_mess);
     if(mess_number == 0){
         printf("Nessun messaggio\n");
         return;
@@ -1094,7 +1095,7 @@ void show(){
     printf("Messaggi che ti ha inviato mentri eri offline: %d\n", mess_number);
     // ricevo i messaggi, conoscendo il numero di messaggi non serve un codice per indicare la fine
     for(i = 0; i < mess_number; i++){
-        ret = recv(sd, (void*)messagge, BUFFER_SIZE, 0);
+        ret = recv(sd, (void*)message, BUFFER_SIZE, 0);
         if(ret < 0){
             perror("Errore in fase di ricezione: \n");
             return;
@@ -1103,8 +1104,8 @@ void show(){
             printf("DISCONNESSIONE SERVER\n");
             exit(1);
         }
-        printf("%s", messagge);
-        strcpy(messagge, "");
+        printf("%s", message);
+        strcpy(message, "");
     }
     printf("\n");
 }
@@ -1152,6 +1153,11 @@ void sendMessageToServer(char* sender, char* dest, char* message){
     }
 }
 
+void out(){
+    printf("OUT\n");
+    exit(0);
+}
+
 void execUserCommand(char command){
     printf("exec: %c\n", command);
     switch (command)
@@ -1165,6 +1171,8 @@ void execUserCommand(char command){
     case '5':
         chat();
         break;
+    case '6':
+        out();
     default:
         break;
     }

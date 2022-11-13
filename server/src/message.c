@@ -1,6 +1,6 @@
 #include "./../include/constants.h"
 #include "./../include/vector.h"
-#include "./../include/messaggio.h"
+#include "./../include/message.h"
 
 void userMessagesInit(struct UserMessages *u){
     u->last_timestamp = (time_t)NULL;

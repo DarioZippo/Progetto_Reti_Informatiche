@@ -4,7 +4,7 @@
 
 struct ChatState{
     // Variabili per chat P2P
-    // i messaggi successivi al primo vengono mandati al peer al peer che per ultimo ha chattato con me
+    // i messaggi successivi al primo vengono mandati al peer che per ultimo ha chattato con me
     // con primo messaggio si intende, primo messaggio dopo comando chat username
     // salvo il socket e l'username dell'ultimo peer con cui ho chattato
     bool chat_on; 

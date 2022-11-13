@@ -14,7 +14,7 @@
 #include "./../include/record.h"
 #include "./../include/util.h"
 #include "./../include/vector.h"
-#include "./../include/messaggio.h"
+#include "./../include/message.h"
 
 #include "./../include/globals.h"
 
@@ -40,10 +40,10 @@ void insertLoggedUser(char* username, int port){
     // se non c'è creo nuovo elemento della lista
     if(found == false){
         userRegister.records.pfVectorAdd(&userRegister.records, malloc(sizeof(struct Record)));
-        printf("%d\n", userRegister.records.pfVectorTotal(&userRegister.records));
+        //printf("%d\n", userRegister.records.pfVectorTotal(&userRegister.records));
         temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, userRegister.records.pfVectorTotal(&userRegister.records) - 1);
     }
-    printf("Temp individuato\n");
+    //printf("Temp individuato\n");
     // aggiorno entry del server
     time(&rawtime);
 
@@ -52,22 +52,22 @@ void insertLoggedUser(char* username, int port){
     temp->login = rawtime; // login a timestamp corrente
     temp->logout = (time_t) NULL; // logout NULL perchè è online
     temp->socket = current_s; // socket viene salvato per la disconnessione improvvisa
-    writeLoginOnFile(username, record, len, 4242/*porta*/, rawtime);
+    writeLoginOnFile(username, record, len, port, rawtime);
 
     userRegister.onlineCounter++;
 }
 
 // scrivo login su file di log
-void writeLoginOnFile(char* username, char* record, int len, int porta, time_t rawtime){
-    printf("Scrittura su file\n");
-    FILE* file_login = fopen("./login.txt", "a");
+void writeLoginOnFile(char* username, char* record, int len, int port, time_t rawtime){
+    //printf("Scrittura su file\n");
+    FILE* file_login = fopen("./server/documents/login.txt", "a");
     if(file_login == NULL){
         printf("Errore nell'apertura del file\n");
         return;
     }
     
     time(&rawtime);
-    fprintf(file_login, "%s %d %s %s\n", username, porta, ctime(&rawtime), "NULL");
+    fprintf(file_login, "%s %d %s %s\n", username, port, ctime(&rawtime), "NULL");
     fclose(file_login);
 }
 
@@ -77,11 +77,11 @@ int isItOnline(char* username, int* target_s){
     struct Record* temp;
     for(int i = 0; i < userRegister.records.pfVectorTotal(&userRegister.records); i++){
         temp = (struct Record*)userRegister.records.pfVectorGet(&userRegister.records, i);
-        printf("Temp: %s con len: %d\n", temp->username, strlen(temp->username));
+        //printf("Temp: %s con len: %d\n", temp->username, strlen(temp->username));
         if(strcmp(temp->username, username) == 0){
-            printf("Trovato nella lista\n");
+            //printf("Trovato nella lista\n");
             if(temp->logout == (time_t) NULL){ // timestamp_logout == NULL significa che è online
-                printf("E' ONLINE!!!!\n");
+                printf("E' online\n");
                 p = temp->port;
                 *target_s = temp->socket;
             }
@@ -154,7 +154,7 @@ bool searchUser(char* user_psw){
     //printf("Dopo la lettura\n");
     // se non l'ha trovato, invia "NO" e il client rileva che il login ha fallito
     fclose(file_user);
-    printf("Fine ricerca: %d\n", found);
+    //printf("Fine ricerca: %d\n", found);
     return found;
 }
 
@@ -167,7 +167,7 @@ void readCredentials(char* username, char* password){
         return;
     }
     len = ntohs(lmsg);
-    printf("Lunghezza us: %d\n", len);
+    //printf("Lunghezza us: %d\n", len);
     // riceve username
     ret = recv(current_s, (void*)username, len, 0);
     if(ret < 0){
@@ -190,7 +190,7 @@ void readCredentials(char* username, char* password){
         return;
     }
     len = ntohs(lmsg);
-    printf("Lunghezza ps: %d\n", len);
+    //printf("Lunghezza ps: %d\n", len);
     // riceve password
     ret = recv(current_s, (void*)password, len, 0);
     if(ret < 0){
@@ -238,47 +238,6 @@ void clientDisconnection(int sock){
     
     perror("Disconnessione client \n");
     printf("CLIENT DISCONNESSO %s %s", temp->username, ctime(&temp->logout));
-}
-
-void restoreLogin(){
-    FILE* file_user;
-    char* line, *current_username;
-    int read, i = 0;
-    bool found = false;
-
-    file_user = fopen("././server/documents/user.txt", "r");
-    if(file_user == NULL){
-        printf("Errore nell'apertura del file\n");
-        return;
-    }
-
-    while ((read = getline(&line, &len, file_user)) != -1) {
-        printf("Retrieved line of length %zu:\n", read);
-        line[read - 1] = '\0';
-        printf("%s\n", line);
-        
-        while(1){
-            if(line[i] == ' '){
-                break;
-            }
-            i++;
-        }
-        current_username = (char *) malloc(i + 1);
-        strncpy(current_username, line, i);
-        current_username[i] = '\0';
-        //insertLoggedUser(current_username, port);
-        i = 0;
-    }
-    // se non l'ha trovato, invia "NO" e il client rileva che il login ha fallito
-    if(found == false){
-        /*ret = sendcurrent_s, "NO\0", 6, 0);
-        if(ret < 0){
-            printf("Errore nell'invio\n");
-            return 0;
-        }*/
-    }
-    fclose(file_user);
-    printf("Fine ripristino:\n");
 }
 
 // inizializzo le strutture dati dedicate ai messaggi
@@ -433,8 +392,7 @@ void restoreMessages(){
 
 void restore(){
     restoreMessages();
-    showChats();
-    //restoreLogin();
+    //showChats();
 }
 
 void showChats(){
@@ -453,7 +411,7 @@ void showUserMessages(vector *v){
     printf("Lista mittenti: ");
     for(int i = 0; i < v->pfVectorTotal(v); i++){
         temp_um = (struct UserMessages*)v->pfVectorGet(v, i);
-        printf("m: %s\n", temp_um->sender);
+        printf("mitt: %s\n", temp_um->sender);
         showMessages(&temp_um->message_list);
     }
 }

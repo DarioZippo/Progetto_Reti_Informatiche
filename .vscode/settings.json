@@ -15,6 +15,10 @@
         "messaggio.h": "c",
         "alloca.h": "c",
         "util.h": "c",
-        "record.h": "c"
+        "record.h": "c",
+        "*.tcc": "c",
+        "typeinfo": "c",
+        "unistd.h": "c",
+        "time.h": "c"
     }
 }

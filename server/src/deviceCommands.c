@@ -14,7 +14,7 @@
 #include "./../include/record.h"
 #include "./../include/util.h"
 #include "./../include/vector.h"
-#include "./../include/messaggio.h"
+#include "./../include/message.h"
 #include "./../include/globals.h"
 
 void execDeviceCommand(int command){
@@ -101,7 +101,7 @@ void in(){
     found = searchUser(user_psw);
     // non l'ha trovato, non inserisco il login
     if(found == false){
-        printf("Non sei ancora registrato\n");
+        printf("L'utente non è ancora registrato\n");
         //Informo il client che il login non verrà effettuato
         ret = send(current_s, "NO\0", 6, 0);
         if(ret < 0){
@@ -139,7 +139,7 @@ void hanging(){
         return;
     }
 
-    // cerco mittente nella lista dei mittenti
+    // cerco il mittente di hanging nella lista dei destinatari
     struct StructMessage* temp_m;
     
     for(int i = 0; i < messages.pfVectorTotal(&messages); i++){
@@ -363,9 +363,9 @@ void chat(){
     }
     username[len - 1] = '\0';
 
-    printf("%s con len: %d, %d\n", username, strlen(username), len);
-
-    p = isItOnline(username);
+    //printf("%s con len: %d, %d\n", username, strlen(username), len);
+    int temp;
+    p = isItOnline(username, &temp);
 
     pp = htons(p);
     ret = send(current_s, (void*) &pp, sizeof(uint16_t), 0);
@@ -425,7 +425,7 @@ void pendentMessage(){
             break;   
         }
     }
-    printf("post ricerca, fine ricerca: %d\n", found);
+    //printf("post ricerca, fine ricerca: %d\n", found);
     // se non c'è creo nuovo elemento della lista
     if(found == false){
         messages.pfVectorAdd(&messages, malloc(sizeof(struct StructMessage)));
@@ -449,7 +449,7 @@ void pendentMessage(){
             break;   
         }
     }
-    printf("\n post ricerca, fine ricerca: %d \n", found);
+    //printf("\n post ricerca, fine ricerca: %d \n", found);
     // se non c'è creo nuovo elemento
     if(found == false){
         temp_v->pfVectorAdd(temp_v, malloc(sizeof(struct UserMessages)));
@@ -460,7 +460,6 @@ void pendentMessage(){
     }
 
     // inserisco messaggio in coda alla lista dei messaggi
-    // per non scorrere ogni volta la lista mantengo un puntatore alla coda della lista
     struct Message *new_mess = (void*) malloc(sizeof(struct Message));
     printf("messaggio: %s\n", message);
     strcpy(new_mess->mess, message);

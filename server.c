@@ -29,7 +29,8 @@ int main(int argc, char** argv){
     vector_init(&messages);
     vector_init(&usersLink);
 
-    int ret, newsd, addrlen, choice;
+    int ret, sd, newsd, addrlen, choice;
+    char c_choice;
 
     restore();
     showServerMenu();
@@ -82,7 +83,7 @@ int main(int argc, char** argv){
             perror("ERRORE SELECT:");
             exit(1);
         }
-        for(current_s = 0; current_s <= fdmax; current_s++) { 
+        for(current_s = 0; current_s <= fdmax; current_s++) {
             // controllo se current_s è pronto 
             if(FD_ISSET(current_s, &read_fds)) { 
                 // se current_s == listener_sock significa che ci sono nuove connessioni, perciò faccio accept 
@@ -106,6 +107,7 @@ int main(int argc, char** argv){
                 // file descriptor stdin, è stato digitato un comando
                 if(current_s == STDIN){
                     scanf("%d", &choice);
+                    getchar();
                     execServerCommand(choice);
                 }
                 // socket di comunicazione
@@ -130,12 +132,11 @@ int main(int argc, char** argv){
                     execDeviceCommand(command);
                 } 
             }
-        
         }
+        
     }
     
     printf("FINE\n");
-    fflush(stdout);
     close(sd);
  
 }

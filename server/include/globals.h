@@ -19,7 +19,7 @@
 #include "./vector.h"
 #include "./record.h"
 
-EXTERN int ret, addrlen, len, sd, current_s, port, command;
+EXTERN int ret, addrlen, len, current_s, port, command;
 EXTERN uint16_t lmsg, s_command;
     
 EXTERN fd_set master; 

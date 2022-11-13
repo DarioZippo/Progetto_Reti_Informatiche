@@ -16,8 +16,8 @@ dev_vector.o: vector.c
 	gcc -Wall -c -g device/src/vector.c
 
 # make rule per il server 
-serv: server.o  ./server/src/globals.o ./server/src/serverCommands.o ./server/src/deviceCommands.o ./server/src/util.o ./server/src/vector.o ./server/src/messaggio.o ./server/src/record.o
-	gcc -Wall server.o ./server/src/globals.o ./server/src/serverCommands.o ./server/src/deviceCommands.o ./server/src/util.o ./server/src/vector.o ./server/src/messaggio.o ./server/src/record.o -o serv
+serv: server.o  ./server/src/globals.o ./server/src/serverCommands.o ./server/src/deviceCommands.o ./server/src/util.o ./server/src/vector.o ./server/src/message.o ./server/src/record.o
+	gcc -Wall server.o ./server/src/globals.o ./server/src/serverCommands.o ./server/src/deviceCommands.o ./server/src/util.o ./server/src/vector.o ./server/src/message.o ./server/src/record.o -o serv
 
 server.o: server.c
 	gcc -Wall -c -g server.c 
@@ -37,8 +37,8 @@ util.o: util.c
 serv_vector.o: vector.c 
 	gcc -Wall -c -g server/src/vector.c
 
-messaggio.o: messaggio.c
-	gcc -Wall -c -g server/src/messaggio.c
+message.o: message.c
+	gcc -Wall -c -g server/src/message.c
 
 record.o: record.c
 	gcc -Wall -c -g server/src/record.c
